@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css'; // <--- THIS IS THE MISSING KEY
+import ForgotPassword from './pages/ForgotPassword';
 
 // --- COMPONENTS ---
 import AdminLayout from './components/AdminLayout';
@@ -39,6 +40,9 @@ function App() {
         
         {/* /register goes to the dedicated Registration Page */}
         <Route path="/register" element={<RegisterPage />} />
+
+        {/* /forgot password goes to dedicated forgot password page*/}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         
 
         {/* =========================================

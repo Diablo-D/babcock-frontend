@@ -300,9 +300,20 @@ function RegisterPage() {
                         {loginError && <div className="alert border-0 shadow-sm py-2 mb-3 w-100 small text-start rounded-3" style={{backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545', fontWeight: '500'}}>{loginError}</div>}
 
                         <input className="glass-input mb-3" placeholder="Email or Matric Number" onChange={e => setLoginCreds({...loginCreds, identifier: e.target.value})} />
-                        <input type="password" className="glass-input mb-3" placeholder="Password" onChange={e => setLoginCreds({...loginCreds, password: e.target.value})} />
+                        <input type="password" className="glass-input mb-2" placeholder="Password" onChange={e => setLoginCreds({...loginCreds, password: e.target.value})} />
                         
-                        <button className="glass-btn mt-3" disabled={loading}>{loading ? 'Loading...' : 'Sign In'}</button>
+                        {/* ✅ ADDED: The Forgot Password Link */}
+                        <div className="text-end w-100 mb-3">
+                            <span 
+                                style={{cursor: 'pointer', fontSize: '0.85rem'}} 
+                                className="text-primary fw-bold text-decoration-none" 
+                                onClick={() => navigate('/forgot-password')}
+                            >
+                                Forgot Password?
+                            </span>
+                        </div>
+
+                        <button className="glass-btn mt-2 w-100" disabled={loading}>{loading ? 'Loading...' : 'Sign In'}</button>
                     </form>
                 </div>
 

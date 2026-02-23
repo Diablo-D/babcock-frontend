@@ -95,9 +95,22 @@ function LandingPage() {
                                 <div className="mb-3">
                                     <input className="glass-input" placeholder="Matric No (e.g. 22/1234)" onChange={e => setCreds({...creds, identifier: e.target.value})} />
                                 </div>
-                                <div className="mb-4">
+                                
+                                <div className="mb-2">
                                     <input type="password" className="glass-input" placeholder="Password" onChange={e => setCreds({...creds, password: e.target.value})} />
                                 </div>
+                                
+                                {/* ✅ ADDED: The Forgot Password Link */}
+                                <div className="text-end w-100 mb-4">
+                                    <span 
+                                        style={{cursor: 'pointer', fontSize: '0.85rem'}} 
+                                        className="text-primary fw-bold text-decoration-none" 
+                                        onClick={() => navigate('/forgot-password')}
+                                    >
+                                        Forgot Password?
+                                    </span>
+                                </div>
+
                                 <button className="glass-btn-primary w-100 py-3" disabled={loading}>
                                     {loading ? 'Authenticating...' : 'Login to Portal'} <FaArrowRight />
                                 </button>

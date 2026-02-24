@@ -24,7 +24,7 @@ function AdminQueue() {
 
     const handleApprove = async (clearanceId) => {
         try {
-            await api.post(`/admin/approve/${clearanceId}`);
+            await api.post('/admin/approve-student', { clearance_id: clearanceId });
             toast.success('Student approved');
             fetchQueue();
         } catch (err) { toast.error(err.response?.data?.message || 'Approve failed'); }
@@ -38,7 +38,7 @@ function AdminQueue() {
     const handleReject = async () => {
         if (!rejectReason.trim()) return toast.error('Please provide a rejection reason');
         try {
-            await api.post(`/admin/reject/${rejectModal.id}`, { reason: rejectReason });
+            await api.post('/admin/reject-student', { clearance_id: rejectModal.id, reason: rejectReason });
             toast.success('Student rejected');
             setRejectModal({ show: false, id: null });
             fetchQueue();
@@ -89,7 +89,7 @@ function AdminQueue() {
                         </thead>
                         <tbody>
                             {students.map(s => (
-                                <tr key={s.clearance_id || s.id}>
+                                <tr key={s.id}>
                                     <td style={{ paddingLeft: 'var(--space-6)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                                             <div style={{
@@ -98,9 +98,9 @@ function AdminQueue() {
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 fontWeight: 700, fontSize: 'var(--text-xs)',
                                             }}>
-                                                {(s.name || '??').substring(0, 2).toUpperCase()}
+                                                {(s.student_name || '??').substring(0, 2).toUpperCase()}
                                             </div>
-                                            <span style={{ fontWeight: 600 }}>{s.name || 'Unknown'}</span>
+                                            <span style={{ fontWeight: 600 }}>{s.student_name || 'Unknown'}</span>
                                         </div>
                                     </td>
                                     <td><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{s.matric_no}</span></td>
@@ -109,11 +109,11 @@ function AdminQueue() {
                                     </td>
                                     <td style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>
                                         <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                            <button onClick={() => openRejectModal(s.clearance_id)} className="btn-danger-glass"
+                                            <button onClick={() => openRejectModal(s.id)} className="btn-danger-glass"
                                                 style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
                                                 <FaTimes size={10} /> Reject
                                             </button>
-                                            <button onClick={() => handleApprove(s.clearance_id)} className="btn-success-glass"
+                                            <button onClick={() => handleApprove(s.id)} className="btn-success-glass"
                                                 style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
                                                 <FaCheck size={10} /> Approve
                                             </button>

@@ -861,3 +861,14 @@ body {
 div[class*="go"] {
   font-family: var(--font-sans) !important;
 }
+
+/* ── Keyframes ── */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

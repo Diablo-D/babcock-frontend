@@ -9,6 +9,7 @@ import PrivateRoute from './components/PrivateRoute';
 import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPassword from './pages/ForgotPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageOfficers from './pages/ManageOfficers';
 import AllStudents from './pages/AllStudents';
@@ -29,6 +30,7 @@ function App() {
                         <Route path="/" element={<LandingPage />} />
                         <Route path="/register" element={<RegisterPage />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/verify-email" element={<VerifyEmail />} />
 
                         {/* Admin */}
                         <Route path="/admin/dashboard" element={

@@ -11,6 +11,7 @@ import {
 function OfficerDashboard() {
     const [data, setData] = useState({ officer: {}, queue: [] });
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
@@ -18,13 +19,15 @@ function OfficerDashboard() {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
-    const fetchDashboard = useCallback(async () => {
+    const fetchDashboard = useCallback(async (isRefresh = false) => {
+        if (isRefresh) setRefreshing(true);
         try {
             const res = await api.get('/officer/dashboard');
             setData(res.data);
+            if (isRefresh) toast.success('Queue refreshed');
         } catch (err) {
             if (err.response?.status === 403) toast.error('Access denied');
-        } finally { setLoading(false); }
+        } finally { setLoading(false); setRefreshing(false); }
     }, []);
 
     useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
@@ -84,9 +87,8 @@ function OfficerDashboard() {
             <nav style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: 'var(--space-4) var(--space-6)',
-                borderBottom: '1px solid var(--border-default)',
-                background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                borderBottom: '1px solid var(--border-subtle)',
+                background: 'transparent',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <div style={{
@@ -138,8 +140,8 @@ function OfficerDashboard() {
                             {data.queue.length} student{data.queue.length !== 1 ? 's' : ''} pending review
                         </p>
                     </div>
-                    <button onClick={fetchDashboard} className="btn-ghost-glass">
-                        <FaSync size={12} /> Refresh
+                    <button onClick={() => fetchDashboard(true)} disabled={refreshing} className="btn-ghost-glass">
+                        <FaSync size={12} style={refreshing ? { animation: 'spin 0.8s linear infinite' } : {}} /> {refreshing ? 'Refreshing...' : 'Refresh'}
                     </button>
                 </div>
 

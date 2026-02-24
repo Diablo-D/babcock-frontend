@@ -1,102 +1,100 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './index.css'; // <--- THIS IS THE MISSING KEY
-import ForgotPassword from './pages/ForgotPassword';
-
-// --- COMPONENTS ---
-import AdminLayout from './components/AdminLayout';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from './context/ThemeContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import PrivateRoute from './components/PrivateRoute';
 
-// --- NEW PAGES (Glass Design) ---
-import LandingPage from './pages/LandingPage';   // Replaces Login/AuthPage
-import RegisterPage from './pages/RegisterPage'; // Dedicated Register Page
-
-// Admin Pages
-import AdminDashboard from './pages/AdminDashboard'; 
-import AdminQueue from './pages/AdminQueue';
+// Pages
+import LandingPage from './pages/LandingPage';
+import RegisterPage from './pages/RegisterPage';
+import ForgotPassword from './pages/ForgotPassword';
+import AdminDashboard from './pages/AdminDashboard';
 import ManageOfficers from './pages/ManageOfficers';
 import AllStudents from './pages/AllStudents';
-
-// Officer Pages
+import AdminQueue from './pages/AdminQueue';
 import OfficerDashboard from './pages/OfficerDashboard';
-
-// Student Pages
 import StudentDashboard from './pages/StudentDashboard';
 
+// Layout
+import AdminLayout from './components/AdminLayout';
+
 function App() {
-  return (
-    <Router>
-      <Routes>
-        {/* =========================================
-            PUBLIC ROUTES
-           ========================================= */}
-        
-        {/* Root path goes to Landing Page (which contains Login) */}
-        <Route path="/" element={<LandingPage />} />
-        
-        {/* /login explicitly goes to Landing Page */}
-        <Route path="/login" element={<LandingPage />} />
-        
-        {/* /register goes to the dedicated Registration Page */}
-        <Route path="/register" element={<RegisterPage />} />
+    return (
+        <ThemeProvider>
+            <ErrorBoundary>
+                <Router>
+                    <Routes>
+                        {/* Public */}
+                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/register" element={<RegisterPage />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* /forgot password goes to dedicated forgot password page*/}
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        
+                        {/* Admin */}
+                        <Route path="/admin/dashboard" element={
+                            <PrivateRoute allowedRoles={['super_admin']}>
+                                <AdminLayout><AdminDashboard /></AdminLayout>
+                            </PrivateRoute>
+                        } />
+                        <Route path="/admin/officers" element={
+                            <PrivateRoute allowedRoles={['super_admin']}>
+                                <AdminLayout><ManageOfficers /></AdminLayout>
+                            </PrivateRoute>
+                        } />
+                        <Route path="/admin/students" element={
+                            <PrivateRoute allowedRoles={['super_admin']}>
+                                <AdminLayout><AllStudents /></AdminLayout>
+                            </PrivateRoute>
+                        } />
+                        <Route path="/admin/queue/:deptName" element={
+                            <PrivateRoute allowedRoles={['super_admin']}>
+                                <AdminLayout><AdminQueue /></AdminLayout>
+                            </PrivateRoute>
+                        } />
 
-        {/* =========================================
-            ADMIN ROUTES (Super Admin Only)
-           ========================================= */}
-        <Route path="/admin/dashboard" element={
-            <PrivateRoute roles={['super_admin']}>
-                <AdminLayout> <AdminDashboard /> </AdminLayout>
-            </PrivateRoute>
-        } />
+                        {/* Officer */}
+                        <Route path="/officer/dashboard" element={
+                            <PrivateRoute allowedRoles={['officer']}>
+                                <OfficerDashboard />
+                            </PrivateRoute>
+                        } />
 
-        <Route path="/admin/officers" element={
-              <PrivateRoute roles={['super_admin']}>
-                  <AdminLayout> <ManageOfficers /> </AdminLayout>
-              </PrivateRoute>
-        } />
-        
-        <Route path="/admin/students" element={
-              <PrivateRoute roles={['super_admin']}>
-                  <AdminLayout> <AllStudents /> </AdminLayout>
-              </PrivateRoute>
-        } />
+                        {/* Student */}
+                        <Route path="/student/dashboard" element={
+                            <PrivateRoute allowedRoles={['student']}>
+                                <StudentDashboard />
+                            </PrivateRoute>
+                        } />
+                    </Routes>
+                </Router>
 
-        <Route path="/admin/queue/:department" element={
-            <PrivateRoute roles={['super_admin']}>
-                <AdminLayout> <AdminQueue /> </AdminLayout>
-            </PrivateRoute>
-        } />
-
-
-        {/* =========================================
-            OFFICER ROUTES (Staff Only)
-           ========================================= */}
-        <Route path="/officer/dashboard" element={
-            <PrivateRoute roles={['officer']}>
-                <OfficerDashboard />
-            </PrivateRoute>
-        } />
-
-
-        {/* =========================================
-            STUDENT ROUTES (Students Only)
-           ========================================= */}
-        <Route path="/student/dashboard" element={
-            <PrivateRoute roles={['student']}>
-                <StudentDashboard />
-            </PrivateRoute>
-        } />
-
-        {/* Fallback - Redirect to Landing Page */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Router>
-  );
+                <Toaster
+                    position="top-right"
+                    toastOptions={{
+                        duration: 3500,
+                        style: {
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: 'var(--text-sm)',
+                            fontWeight: '500',
+                            background: 'var(--glass-bg-strong)',
+                            backdropFilter: 'blur(20px)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--glass-border)',
+                            borderRadius: 'var(--radius-lg)',
+                            boxShadow: 'var(--glass-shadow-lg)',
+                            padding: '12px 16px',
+                        },
+                        success: {
+                            iconTheme: { primary: 'var(--success)', secondary: '#fff' },
+                        },
+                        error: {
+                            iconTheme: { primary: 'var(--danger)', secondary: '#fff' },
+                        },
+                    }}
+                />
+            </ErrorBoundary>
+        </ThemeProvider>
+    );
 }
 
 export default App;

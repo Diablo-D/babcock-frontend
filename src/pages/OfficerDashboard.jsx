@@ -1,96 +1,125 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { 
-    FaCheck, FaTimes, FaIdCard, FaSignOutAlt, FaSync, FaCaretDown, FaUserTie,
-    FaFileAlt, FaHospital, FaBook, FaMoneyCheckAlt 
+import toast from 'react-hot-toast';
+import ThemeToggle from '../components/ThemeToggle';
+import {
+    FaCheck, FaTimes, FaSignOutAlt, FaSync, FaCaretDown, FaUserTie,
+    FaIdCard, FaHospital, FaBook, FaMoneyCheckAlt, FaEye, FaFileAlt
 } from 'react-icons/fa';
 
 function OfficerDashboard() {
     const [data, setData] = useState({ officer: {}, queue: [] });
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [previewImage, setPreviewImage] = useState(null); 
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showRejectModal, setShowRejectModal] = useState(null);
+    const [rejectReason, setRejectReason] = useState('');
+    const [previewImage, setPreviewImage] = useState(null);
+    const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchDashboard();
-    }, []);
-
-    const fetchDashboard = async () => {
-        setRefreshing(true);
+    const fetchDashboard = useCallback(async () => {
         try {
             const res = await api.get('/officer/dashboard');
             setData(res.data);
         } catch (err) {
-            console.error(err);
-            if(err.response?.status === 403) alert("Access Denied: Officers Only");
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
+            if (err.response?.status === 403) toast.error('Access denied');
+        } finally { setLoading(false); }
+    }, []);
 
-    const handleAction = async (id, type) => {
-        let reason = null;
-        if (type === 'reject') {
-            reason = prompt("Enter Rejection Reason:");
-            if (!reason) return;
-        } else {
-            if (!confirm("Confirm Approval?")) return;
-        }
+    useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleApprove = async (id) => {
         try {
-            const endpoint = type === 'approve' ? '/officer/approve' : '/officer/reject';
-            await api.post(endpoint, { clearance_id: id, reason });
-            alert(`Student ${type === 'approve' ? 'Approved' : 'Rejected'}!`);
+            await api.post('/officer/approve', { clearance_id: id });
+            toast.success('Student approved!');
             fetchDashboard();
-        } catch (err) {
-            console.error(err.response?.data);
-            alert("Action failed. Check console for details.");
-        }
+        } catch (err) { toast.error(err.response?.data?.message || 'Approval failed'); }
     };
 
-    const handleLogout = () => {
+    const handleReject = async (id) => {
+        if (!rejectReason || rejectReason.length < 5) return toast.error('Provide a reason (min 5 chars)');
+        try {
+            await api.post('/officer/reject', { clearance_id: id, reason: rejectReason });
+            toast.success('Student rejected!');
+            setShowRejectModal(null);
+            setRejectReason('');
+            fetchDashboard();
+        } catch (err) { toast.error(err.response?.data?.message || 'Rejection failed'); }
+    };
+
+    const handleLogout = async () => {
+        try { await api.post('/logout'); } catch (e) { }
         localStorage.clear();
+        toast.success('Logged out');
         navigate('/');
     };
 
-    if (loading) return <div className="vh-100 d-flex align-items-center justify-content-center animated-fluid-bg"><div className="text-white h4">Loading Office...</div></div>;
+    if (loading) return (
+        <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="skeleton" style={{ width: 200, height: 20 }} />
+        </div>
+    );
 
-    // --- DEPARTMENT IDENTITY CHECKS ---
     const deptName = data.officer?.department?.toLowerCase() || '';
     const isIdOfficer = deptName.includes('id card');
     const isButhOfficer = deptName.includes('buth');
     const isLibraryOfficer = deptName.includes('library');
     const isBursaryOfficer = deptName.includes('bursary');
 
+    const deptIcon = isIdOfficer ? <FaIdCard /> : isButhOfficer ? <FaHospital /> :
+        isLibraryOfficer ? <FaBook /> : isBursaryOfficer ? <FaMoneyCheckAlt /> : <FaFileAlt />;
+
     return (
-        <div className="animated-fluid-bg" style={{ flexDirection: "column", overflowY: "auto", minHeight: '100vh' }}>
-            
-            <nav className="navbar navbar-expand-lg px-4 py-3 glass-nav-fade">
-                <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
-                    <span className="badge bg-primary rounded-circle p-2 shadow-sm">🛡️</span>
-                    {data.officer.department} Office
-                </span>
-                
-                <div className="ms-auto d-flex align-items-center gap-3">
-                    <div className="position-relative">
-                        <div 
-                            className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill border shadow-sm"
-                            onClick={() => setShowDropdown(!showDropdown)}
-                            style={{cursor: 'pointer', transition: 'all 0.3s ease', background: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.2)'}}
-                        >
-                            <FaUserTie className="text-white"/>
-                            <span className="fw-bold text-white">{data.officer.name}</span>
-                            <FaCaretDown className="text-white-50"/>
-                        </div>
-                        
+        <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            {/* ── Navbar ── */}
+            <nav style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: 'var(--space-4) var(--space-6)',
+                borderBottom: '1px solid var(--border-default)',
+                background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <div style={{
+                        width: 34, height: 34, borderRadius: 'var(--radius-md)',
+                        background: 'var(--accent-soft)', color: 'var(--accent)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{deptIcon}</div>
+                    <span style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>
+                        {data.officer.department} Office
+                    </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <ThemeToggle />
+                    <div ref={dropdownRef} style={{ position: 'relative' }}>
+                        <button onClick={() => setShowDropdown(!showDropdown)} className="btn-ghost-glass" style={{ padding: '6px 14px' }}>
+                            <FaUserTie size={13} /> {data.officer.name} <FaCaretDown size={10} />
+                        </button>
                         {showDropdown && (
-                            <div className="position-absolute end-0 mt-2 bg-white shadow-lg rounded-3 overflow-hidden border" style={{minWidth: '180px', zIndex: 1000}}>
-                                <button onClick={handleLogout} className="btn w-100 text-start px-3 py-3 text-danger bg-transparent border-0 hover-bg-light d-flex align-items-center fw-bold">
-                                    <FaSignOutAlt className="me-2"/> Secure Logout
+                            <div style={{
+                                position: 'absolute', right: 0, top: '100%', marginTop: 8,
+                                background: 'var(--glass-bg-strong)', backdropFilter: 'var(--glass-blur)',
+                                border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
+                                boxShadow: 'var(--glass-shadow-lg)', minWidth: 180, overflow: 'hidden',
+                                animation: 'slideDown var(--duration-normal) var(--ease-out)',
+                            }}>
+                                <button onClick={handleLogout} style={{
+                                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                                    padding: 'var(--space-3) var(--space-4)', background: 'transparent',
+                                    border: 'none', color: 'var(--danger)', fontWeight: 600,
+                                    fontSize: 'var(--text-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                                }}>
+                                    <FaSignOutAlt /> Secure Logout
                                 </button>
                             </div>
                         )}
@@ -98,130 +127,129 @@ function OfficerDashboard() {
                 </div>
             </nav>
 
-            <div className="container py-4 flex-grow-1">
-                <div className="d-flex justify-content-between align-items-center mb-4 text-white">
-                    <div style={{textShadow: '0 2px 4px rgba(0,0,0,0.6)'}}>
-                        <h2 className="fw-bold">Clearance Queue</h2>
-                        <p className="mb-0 text-white-75">Manage pending requests efficiently.</p>
+            {/* ── Content ── */}
+            <div className="page-container page-enter">
+                <div style={{ marginBottom: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                            Clearance Queue
+                        </h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                            {data.queue.length} student{data.queue.length !== 1 ? 's' : ''} pending review
+                        </p>
                     </div>
-                    <button onClick={fetchDashboard} className="btn btn-light rounded-pill shadow-sm fw-bold text-primary px-4 py-2">
-                        <FaSync className={refreshing ? "fa-spin me-2" : "me-2"}/> Refresh Queue
+                    <button onClick={fetchDashboard} className="btn-ghost-glass">
+                        <FaSync size={12} /> Refresh
                     </button>
                 </div>
 
-                <div className="card border-0 shadow-lg rounded-4 overflow-hidden" style={{background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)'}}>
-                    <div className="card-body p-0">
-                        {data.queue.length === 0 ? (
-                            <div className="text-center py-5">
-                                <div className="display-1 mb-3">🎉</div>
-                                <h4>All Caught Up!</h4>
-                                <p className="text-muted">No students waiting in line.</p>
-                            </div>
-                        ) : (
-                            <div className="table-responsive">
-                                <table className="table table-hover align-middle mb-0">
-                                    <thead className="bg-light text-uppercase small fw-bold text-muted">
-                                        <tr>
-                                            <th className="ps-4 py-3">Student Info</th>
-                                            <th>Matric No</th>
-                                            <th>Date</th>
-                                            <th className="text-end pe-4">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.queue.map(student => (
-                                            <tr key={student.id}>
-                                                <td className="ps-4 py-3">
-                                                    <div className="fw-bold text-dark fs-6">{student.student_name}</div>
-                                                    
-                                                    {/* --- BYPASS REQUEST INFO --- */}
-                                                    {!!student.bypass_requested && (
-                                                        <div className="mt-2 d-flex flex-wrap gap-2 align-items-center">
-                                                            <span className="badge bg-warning text-dark shadow-sm px-2 py-1">
-                                                                ⚠️ Bypass Request: {student.bypass_reason}
-                                                            </span>
-                                                            {student.bypass_document_url && (
-                                                                <a href={student.bypass_document_url} target="_blank" rel="noreferrer" className="badge bg-danger text-white text-decoration-none shadow-sm px-2 py-1">
-                                                                    <FaFileAlt className="me-1"/> View Bypass Doc
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    {/* --- DYNAMIC DEPARTMENT REQUIREMENTS --- */}
-                                                    
-                                                    {/* 1. BUTH Logic */}
-                                                    {isButhOfficer && (
-                                                        <div className="mt-2">
-                                                            <span className={`badge ${student.buth_number ? 'bg-info' : 'bg-secondary'} text-white shadow-sm px-2 py-1`}>
-                                                                <FaHospital className="me-1"/> Hospital No: {student.buth_number || 'Missing'}
-                                                            </span>
-                                                        </div>
-                                                    )}
-
-                                                    {/* 2. Library Logic */}
-                                                    {isLibraryOfficer && (
-                                                        <div className="mt-2">
-                                                            {student.library_thesis_url ? (
-                                                                <a href={student.library_thesis_url} target="_blank" rel="noreferrer" className="badge bg-primary text-white text-decoration-none shadow-sm px-2 py-1">
-                                                                    <FaBook className="me-1"/> View Uploaded Thesis
-                                                                </a>
-                                                            ) : (
-                                                                <span className="badge bg-danger text-white shadow-sm px-2 py-1">No Thesis Uploaded</span>
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    {/* 3. Bursary Logic */}
-                                                    {isBursaryOfficer && (
-                                                        <div className="mt-2 p-2 bg-light rounded-3 border border-success border-opacity-25 d-inline-block shadow-sm">
-                                                            <div className="small fw-bold text-success d-flex align-items-center gap-1 mb-1"><FaMoneyCheckAlt/> Bursary Details</div>
-                                                            <div className="small text-muted"><strong>Account:</strong> {student.bursary_account || 'Missing'}</div>
-                                                            <div className="small text-muted"><strong>Grad Date:</strong> {student.bursary_grad_date || 'Missing'}</div>
-                                                        </div>
-                                                    )}
-
-                                                </td>
-                                                <td className="fw-bold text-primary align-middle">{student.matric_no}</td>
-
-                                                <td className="text-muted small fw-medium align-middle">
-                                                    {student.date}
-                                                    {/* Fallback for ID Officer to view standard ID card */}
-                                                    {isIdOfficer && student.id_card_url && (
-                                                        <div className="mt-1">
-                                                            <button className="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 fw-bold" onClick={() => setPreviewImage(student.id_card_url)}>
-                                                                <FaIdCard className="me-1"/> View ID
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </td>
-
-                                                <td className="text-end pe-4 align-middle">
-                                                    <button onClick={() => handleAction(student.id, 'reject')} className="btn btn-outline-danger btn-sm rounded-pill px-3 me-2 fw-bold shadow-sm">
-                                                        <FaTimes className="me-1"/> Reject
-                                                    </button>
-                                                    <button onClick={() => handleAction(student.id, 'approve')} className="btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-sm">
-                                                        <FaCheck className="me-1"/> Approve
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                {data.queue.length === 0 ? (
+                    <div className="glass-card" style={{ textAlign: 'center', padding: 'var(--space-16)' }}>
+                        <FaCheck size={32} style={{ color: 'var(--success)', marginBottom: 'var(--space-4)' }} />
+                        <h4 style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 4 }}>All Caught Up!</h4>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>No students pending in your queue.</p>
                     </div>
-                </div>
+                ) : (
+                    <div className="glass-table-wrap">
+                        <table className="glass-table">
+                            <thead>
+                                <tr>
+                                    <th style={{ paddingLeft: 'var(--space-6)' }}>Student</th>
+                                    <th>Matric No</th>
+                                    <th>Date</th>
+                                    {isIdOfficer && <th>ID Card</th>}
+                                    {isButhOfficer && <th>Hospital No</th>}
+                                    {isLibraryOfficer && <th>Thesis</th>}
+                                    {isBursaryOfficer && <th>Account</th>}
+                                    <th style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.queue.map(s => (
+                                    <tr key={s.clearance_id}>
+                                        <td style={{ paddingLeft: 'var(--space-6)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                                <div style={{
+                                                    width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                                                    background: 'var(--accent-soft)', color: 'var(--accent)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontWeight: 700, fontSize: 'var(--text-xs)',
+                                                }}>
+                                                    {(s.name || '??').substring(0, 2).toUpperCase()}
+                                                </div>
+                                                <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{s.name}</span>
+                                            </div>
+                                        </td>
+                                        <td><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{s.matric_no}</span></td>
+                                        <td style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
+                                            {s.date ? new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                                        </td>
+                                        {isIdOfficer && (
+                                            <td>
+                                                {s.id_card_path ? (
+                                                    <button onClick={() => setPreviewImage(`${api.defaults.baseURL}/../storage/${s.id_card_path}`)}
+                                                        className="btn-outline-glass" style={{ padding: '4px 10px', fontSize: 'var(--text-xs)' }}>
+                                                        <FaEye size={10} /> View
+                                                    </button>
+                                                ) : <span className="badge-glass badge-warning">Not Uploaded</span>}
+                                            </td>
+                                        )}
+                                        {isButhOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.buth_hospital_number || '—'}</td>}
+                                        {isLibraryOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.library_thesis_clearance || '—'}</td>}
+                                        {isBursaryOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.bursary_account_number || '—'}</td>}
+                                        <td style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>
+                                            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                                                <button onClick={() => { setShowRejectModal(s.clearance_id); setRejectReason(''); }}
+                                                    className="btn-danger-glass" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
+                                                    <FaTimes size={10} /> Reject
+                                                </button>
+                                                <button onClick={() => handleApprove(s.clearance_id)}
+                                                    className="btn-success-glass" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
+                                                    <FaCheck size={10} /> Approve
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
-            {/* ID Card Modal */}
-            {previewImage && (
-                <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-75" style={{zIndex: 1050, backdropFilter: 'blur(5px)'}} onClick={() => setPreviewImage(null)}>
-                    <div className="bg-white p-2 rounded shadow-lg" style={{maxWidth: '500px'}} onClick={e => e.stopPropagation()}>
-                        <img src={previewImage} alt="ID Card" className="img-fluid rounded" />
-                        <div className="text-center mt-2">
-                            <button className="btn btn-sm btn-dark rounded-pill px-4" onClick={() => setPreviewImage(null)}>Close Image</button>
+            {/* ── Reject Modal ── */}
+            {showRejectModal && (
+                <div className="glass-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowRejectModal(null)}>
+                    <div className="glass-modal">
+                        <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 'var(--space-2)' }}>
+                            Reject Student
+                        </h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-5)' }}>
+                            Provide a clear reason for rejection.
+                        </p>
+                        <textarea className="glass-textarea" placeholder="Reason for rejection..." rows={3}
+                            value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
+                            style={{ marginBottom: 'var(--space-5)' }} />
+                        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                            <button onClick={() => setShowRejectModal(null)} className="btn-ghost-glass" style={{ flex: 1, padding: 'var(--space-3)' }}>
+                                Cancel
+                            </button>
+                            <button onClick={() => handleReject(showRejectModal)} className="btn-danger-glass" style={{ flex: 1, padding: 'var(--space-3)' }}>
+                                Confirm Reject
+                            </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Image Preview ── */}
+            {previewImage && (
+                <div className="glass-modal-overlay" onClick={() => setPreviewImage(null)}>
+                    <div style={{
+                        maxWidth: 500, width: '90%', borderRadius: 'var(--radius-xl)',
+                        overflow: 'hidden', boxShadow: 'var(--glass-shadow-lg)',
+                    }}>
+                        <img src={previewImage} alt="ID Card" style={{ width: '100%', display: 'block' }} />
                     </div>
                 </div>
             )}
@@ -229,4 +257,4 @@ function OfficerDashboard() {
     );
 }
 
-export default OfficerDashboard;    
+export default OfficerDashboard;

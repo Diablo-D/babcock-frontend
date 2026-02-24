@@ -6,7 +6,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import {
     FaUserGraduate, FaIdCard, FaFileUpload, FaCheckCircle,
     FaTimesCircle, FaClock, FaPaperPlane, FaSignOutAlt, FaCaretDown,
-    FaHospital, FaExclamationCircle, FaEdit, FaRocket, FaCheck
+    FaHospital, FaExclamationCircle, FaEdit, FaRocket, FaCheck, FaBan
 } from 'react-icons/fa';
 
 function StudentDashboard() {
@@ -26,6 +26,8 @@ function StudentDashboard() {
     const [bursaryAccount, setBursaryAccount] = useState('');
     const [gradDate, setGradDate] = useState('');
     const [reqLoading, setReqLoading] = useState(false);
+    const [appealText, setAppealText] = useState('');
+    const [appealSending, setAppealSending] = useState(false);
 
     const fetchDashboard = useCallback(async () => {
         try {
@@ -110,15 +112,69 @@ function StudentDashboard() {
     const buthStep = data?.breakdown?.find(s => s.department === 'BUTH');
     const isButhCleared = buthStep?.status === 'Approved' || buthStep?.status === 'Cleared' || buthStep?.status === 'Completed';
 
+    const handleAppeal = async () => {
+        if (!appealText.trim() || appealText.length < 10) return toast.error('Please write at least 10 characters');
+        setAppealSending(true);
+        try {
+            await api.post('/student/appeal', { message: appealText });
+            toast.success('Appeal submitted! An admin will review it.');
+            setAppealText('');
+        } catch (err) { toast.error(err.response?.data?.message || 'Appeal failed'); }
+        finally { setAppealSending(false); }
+    };
+
+    // ── BLOCKED OVERLAY ──
+    if (data?.is_blocked) {
+        return (
+            <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+                <div className="glass-card" style={{ maxWidth: 500, width: '100%', padding: 'var(--space-10)', textAlign: 'center' }}>
+                    <div style={{
+                        width: 72, height: 72, borderRadius: 'var(--radius-xl)',
+                        background: 'var(--danger-soft)', color: 'var(--danger)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        margin: '0 auto var(--space-5)', fontSize: 28,
+                    }}><FaBan /></div>
+                    <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8, letterSpacing: '-0.02em' }}>
+                        Account Blocked
+                    </h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)', lineHeight: 1.6 }}>
+                        Your account has been blocked by an administrator.
+                    </p>
+                    {data.block_reason && (
+                        <div style={{
+                            background: 'var(--danger-soft)', borderRadius: 'var(--radius-md)',
+                            padding: 'var(--space-4)', marginBottom: 'var(--space-6)',
+                            border: '1px solid var(--danger)',
+                        }}>
+                            <p style={{ color: 'var(--danger)', fontWeight: 600, fontSize: 'var(--text-xs)', textTransform: 'uppercase', marginBottom: 4 }}>Reason</p>
+                            <p style={{ color: 'var(--text-primary)', fontSize: 'var(--text-sm)', fontWeight: 500 }}>{data.block_reason}</p>
+                        </div>
+                    )}
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)', fontWeight: 600 }}>
+                        Submit an Appeal
+                    </p>
+                    <textarea className="glass-textarea" placeholder="Explain why your account should be unblocked (min 10 chars)..." rows={4}
+                        value={appealText} onChange={e => setAppealText(e.target.value)}
+                        style={{ marginBottom: 'var(--space-4)' }} />
+                    <button onClick={handleAppeal} disabled={appealSending} className="btn-primary-glass" style={{ width: '100%', padding: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                        {appealSending ? 'Sending...' : 'Submit Appeal'}
+                    </button>
+                    <button onClick={() => { localStorage.clear(); navigate('/'); }} className="btn-ghost-glass" style={{ width: '100%', padding: 'var(--space-3)' }}>
+                        <FaSignOutAlt size={12} /> Log Out
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             {/* ── Navbar ── */}
             <nav style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: 'var(--space-4) var(--space-6)',
-                borderBottom: '1px solid var(--border-default)',
-                background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                borderBottom: '1px solid var(--border-subtle)',
+                background: 'transparent',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <div style={{

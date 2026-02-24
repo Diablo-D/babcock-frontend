@@ -78,7 +78,8 @@ function RegisterPage() {
         surname: '', first_name: '', middle_name: '',
         matric_no: '', email: '', personal_email: '', password: '',
         phone_code: '+234', phone_number: '',
-        gender: 'Male', school: '', academic_department: '', course: ''
+        gender: 'Male', school: '', academic_department: '', course: '',
+        expected_graduation_date: ''
     });
 
     const handleSchoolChange = (e) => {
@@ -89,7 +90,7 @@ function RegisterPage() {
         e.preventDefault();
         setRegError('');
         if (!regData.surname || !regData.first_name || !regData.email || !regData.personal_email ||
-            !regData.matric_no || !regData.phone_number || !regData.academic_department || !regData.course || !regData.password) {
+            !regData.matric_no || !regData.phone_number || !regData.academic_department || !regData.course || !regData.password || !regData.expected_graduation_date) {
             setRegError('Please fill in all required fields.');
             return;
         }
@@ -224,6 +225,13 @@ function RegisterPage() {
                                     {regData.school && academicStructure[regData.school].courses.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
+                        </div>
+
+                        {/* Graduation Date */}
+                        <div style={{ marginBottom: 'var(--space-4)' }}>
+                            <label style={labelStyle}>Expected Graduation Date *</label>
+                            <input className="glass-input" type="month" value={regData.expected_graduation_date}
+                                onChange={e => setRegData({ ...regData, expected_graduation_date: e.target.value })} />
                         </div>
 
                         {/* Password */}

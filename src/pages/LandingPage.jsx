@@ -34,6 +34,12 @@ function LandingPage() {
                 navigate('/verify-email', { state: { email: err.response.data.email, token: err.response.data.token } });
                 return;
             }
+            // Handle blocked account
+            if (err.response?.status === 403 && err.response?.data?.account_blocked) {
+                const reason = err.response.data.block_reason;
+                setLoginError(`Your account has been blocked.${reason ? ' Reason: ' + reason : ''}`);
+                return;
+            }
             setLoginError(err.response?.data?.message || 'Invalid credentials. Please try again.');
         } finally {
             setLoading(false);

@@ -16,6 +16,9 @@ import AllStudents from './pages/AllStudents';
 import AdminQueue from './pages/AdminQueue';
 import OfficerDashboard from './pages/OfficerDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import ActivityLog from './pages/ActivityLog';
+import EmailTemplates from './pages/EmailTemplates';
+import VerifyCertificate from './pages/VerifyCertificate';
 
 // Layout
 import AdminLayout from './components/AdminLayout';
@@ -67,6 +70,21 @@ function App() {
                                 <StudentDashboard />
                             </PrivateRoute>
                         } />
+
+                        {/* New Admin Pages */}
+                        <Route path="/admin/activity-logs" element={
+                            <PrivateRoute allowedRoles={['super_admin']}>
+                                <ActivityLog />
+                            </PrivateRoute>
+                        } />
+                        <Route path="/admin/email-templates" element={
+                            <PrivateRoute allowedRoles={['super_admin']}>
+                                <EmailTemplates />
+                            </PrivateRoute>
+                        } />
+
+                        {/* Public — Certificate Verification (QR scan) */}
+                        <Route path="/certificate/verify/:token" element={<VerifyCertificate />} />
                     </Routes>
                 </Router>
 

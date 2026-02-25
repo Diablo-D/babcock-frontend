@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { FaArrowLeft, FaUserPlus, FaTrash, FaEdit, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaUserPlus, FaTrash, FaEdit, FaTimes, FaShieldAlt } from 'react-icons/fa';
 
 function ManageOfficers() {
     const [officers, setOfficers] = useState([]);
@@ -11,6 +11,9 @@ function ManageOfficers() {
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [form, setForm] = useState({ name: '', department_id: '', email: '', password: '' });
+    const [permissionsModal, setPermissionsModal] = useState(null); // officer object
+    const [perms, setPerms] = useState({});
+    const [savingPerms, setSavingPerms] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -52,6 +55,22 @@ function ManageOfficers() {
         setEditingId(officer.id);
         setForm({ name: officer.name, department_id: officer.department_id || '', email: officer.email, password: '' });
         setShowModal(true);
+    };
+
+    const openPermissions = (officer) => {
+        setPermissionsModal(officer);
+        setPerms(officer.permissions ?? { view_queue: true, approve: true, reject: true, bypass: true });
+    };
+
+    const updatePermissions = async () => {
+        setSavingPerms(true);
+        try {
+            await api.put(`/admin/officers/${permissionsModal.id}/permissions`, { permissions: perms });
+            toast.success('Permissions updated!');
+            setPermissionsModal(null);
+            fetchData();
+        } catch (e) { toast.error('Failed to update permissions'); }
+        finally { setSavingPerms(false); }
     };
 
     const resetForm = () => {
@@ -114,6 +133,10 @@ function ManageOfficers() {
                                     <td style={{ color: 'var(--text-secondary)' }}>{o.email}</td>
                                     <td style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>
                                         <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                                            <button onClick={() => openPermissions(o)} className="btn-icon-glass" title="Permissions"
+                                                style={{ color: 'var(--accent)' }}>
+                                                <FaShieldAlt size={13} />
+                                            </button>
                                             <button onClick={() => handleEdit(o)} className="btn-icon-glass" title="Edit">
                                                 <FaEdit size={13} />
                                             </button>
@@ -181,6 +204,42 @@ function ManageOfficers() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Permissions Modal */}
+            {permissionsModal && (
+                <div className="glass-modal-overlay" onClick={e => e.target === e.currentTarget && setPermissionsModal(null)}>
+                    <div className="glass-modal">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+                            <div>
+                                <h3 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 'var(--text-lg)' }}>
+                                    <FaShieldAlt style={{ color: 'var(--accent)', marginRight: 8 }} />
+                                    {permissionsModal.name}
+                                </h3>
+                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 3 }}>Set permissions for this officer</p>
+                            </div>
+                            <button onClick={() => setPermissionsModal(null)} className="btn-icon-glass"><FaTimes size={12} /></button>
+                        </div>
+                        {[['view_queue', 'View Queue', 'Can see students in their department queue'],
+                        ['approve', 'Approve Students', 'Can approve student clearances'],
+                        ['reject', 'Reject Students', 'Can reject student clearances with a reason'],
+                        ['bypass', 'Grant Bypass', 'Can approve bypass requests from students']
+                        ].map(([key, label, desc]) => (
+                            <label key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', marginBottom: 'var(--space-2)', cursor: 'pointer' }}>
+                                <div>
+                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 'var(--text-sm)' }}>{label}</div>
+                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>{desc}</div>
+                                </div>
+                                <input type="checkbox" checked={!!perms[key]} onChange={e => setPerms({ ...perms, [key]: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }} />
+                            </label>
+                        ))}
+                        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
+                            <button onClick={() => setPermissionsModal(null)} className="btn-ghost-glass" style={{ flex: 1 }}>Cancel</button>
+                            <button onClick={updatePermissions} disabled={savingPerms} className="btn-primary-glass" style={{ flex: 1 }}>
+                                {savingPerms ? 'Saving...' : 'Save Permissions'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

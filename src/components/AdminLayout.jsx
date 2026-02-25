@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaTachometerAlt, FaUsers, FaUserTie, FaSignOutAlt } from 'react-icons/fa';
+import { FaTachometerAlt, FaUsers, FaUserTie, FaSignOutAlt, FaHistory, FaEnvelope } from 'react-icons/fa';
 import ThemeToggle from './ThemeToggle';
+import NotificationBell from './NotificationBell';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,8 @@ function AdminLayout({ children }) {
         { path: '/admin/dashboard', icon: <FaTachometerAlt size={16} />, label: 'Dashboard' },
         { path: '/admin/officers', icon: <FaUserTie size={16} />, label: 'Manage Officers' },
         { path: '/admin/students', icon: <FaUsers size={16} />, label: 'All Students' },
+        { path: '/admin/activity-logs', icon: <FaHistory size={16} />, label: 'Activity Log' },
+        { path: '/admin/email-templates', icon: <FaEnvelope size={16} />, label: 'Email Templates' },
     ];
 
     return (
@@ -44,9 +47,10 @@ function AdminLayout({ children }) {
                     </span>
                 </div>
 
-                {/* Theme Toggle */}
-                <div style={{ marginBottom: 'var(--space-5)' }}>
+                {/* Theme Toggle + Notifications */}
+                <div style={{ marginBottom: 'var(--space-5)', display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                     <ThemeToggle />
+                    <NotificationBell />
                 </div>
 
                 <div className="glass-divider" />

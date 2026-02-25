@@ -28,6 +28,9 @@ function StudentDashboard() {
     const [reqLoading, setReqLoading] = useState(false);
     const [appealText, setAppealText] = useState('');
     const [appealSending, setAppealSending] = useState(false);
+    const [selfCollection, setSelfCollection] = useState(null);
+    const [collectorData, setCollectorData] = useState({ collector_surname: '', collector_first_name: '', collector_middle_name: '', collector_relationship: '', collector_gsm: '' });
+    const [collectionSubmitting, setCollectionSubmitting] = useState(false);
 
     const fetchDashboard = useCallback(async () => {
         try {
@@ -363,9 +366,82 @@ function StudentDashboard() {
                                                 <input className="glass-input" type="month" value={gradDate} onChange={e => setGradDate(e.target.value)} />
                                             </div>
                                         </div>
-                                        <button onClick={() => handleSpecialRequirement('bursary')} className="btn-success-glass" disabled={reqLoading}
-                                            style={{ width: '100%', padding: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
-                                            Submit Bursary Form <FaPaperPlane size={11} />
+
+                                        {/* Certificate Collection */}
+                                        <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)' }}>
+                                            <h6 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 'var(--space-3)', fontSize: 'var(--text-sm)' }}>📜 Certificate Collection</h6>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)', marginBottom: 'var(--space-3)', lineHeight: 1.5 }}>
+                                                Will you collect your certificate yourself?
+                                            </p>
+                                            <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                                                <button onClick={() => setSelfCollection(true)}
+                                                    className={selfCollection === true ? 'btn-primary-glass' : 'btn-ghost-glass'}
+                                                    style={{ flex: 1, padding: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+                                                    ✅ Yes, I will collect
+                                                </button>
+                                                <button onClick={() => setSelfCollection(false)}
+                                                    className={selfCollection === false ? 'btn-primary-glass' : 'btn-ghost-glass'}
+                                                    style={{ flex: 1, padding: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+                                                    👤 No, someone else
+                                                </button>
+                                            </div>
+
+                                            {selfCollection === false && (
+                                                <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+                                                    <p style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', marginBottom: 'var(--space-3)', textTransform: 'uppercase' }}>Collector's Details</p>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                                        <div>
+                                                            <label style={labelStyle}>Surname *</label>
+                                                            <input className="glass-input" placeholder="Surname" value={collectorData.collector_surname}
+                                                                onChange={e => setCollectorData({ ...collectorData, collector_surname: e.target.value })} />
+                                                        </div>
+                                                        <div>
+                                                            <label style={labelStyle}>First Name *</label>
+                                                            <input className="glass-input" placeholder="First Name" value={collectorData.collector_first_name}
+                                                                onChange={e => setCollectorData({ ...collectorData, collector_first_name: e.target.value })} />
+                                                        </div>
+                                                        <div>
+                                                            <label style={labelStyle}>Middle Name</label>
+                                                            <input className="glass-input" placeholder="Middle" value={collectorData.collector_middle_name}
+                                                                onChange={e => setCollectorData({ ...collectorData, collector_middle_name: e.target.value })} />
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                                                        <div>
+                                                            <label style={labelStyle}>Relationship to Owner *</label>
+                                                            <input className="glass-input" placeholder="e.g. Parent, Sibling" value={collectorData.collector_relationship}
+                                                                onChange={e => setCollectorData({ ...collectorData, collector_relationship: e.target.value })} />
+                                                        </div>
+                                                        <div>
+                                                            <label style={labelStyle}>GSM Number *</label>
+                                                            <input className="glass-input" type="tel" placeholder="e.g. 08012345678" value={collectorData.collector_gsm}
+                                                                onChange={e => setCollectorData({ ...collectorData, collector_gsm: e.target.value })} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button onClick={async () => {
+                                            if (selfCollection === null) return toast.error('Please indicate who will collect your certificate');
+                                            if (selfCollection === false && (!collectorData.collector_surname || !collectorData.collector_first_name || !collectorData.collector_relationship || !collectorData.collector_gsm)) {
+                                                return toast.error('Please fill in all collector details');
+                                            }
+                                            setCollectionSubmitting(true);
+                                            try {
+                                                // Save certificate collection details
+                                                await api.post('/student/certificate-collection', {
+                                                    self_collection: selfCollection,
+                                                    ...(!selfCollection ? collectorData : {}),
+                                                });
+                                                // Also submit the bursary form
+                                                await handleSpecialRequirement('bursary');
+                                                toast.success('Bursary form and certificate collection details saved!');
+                                            } catch (err) { toast.error(err.response?.data?.message || 'Submission failed'); }
+                                            finally { setCollectionSubmitting(false); }
+                                        }} className="btn-success-glass" disabled={collectionSubmitting || reqLoading}
+                                            style={{ width: '100%', padding: 'var(--space-2)', fontSize: 'var(--text-sm)', marginTop: 'var(--space-2)' }}>
+                                            {collectionSubmitting ? 'Submitting...' : 'Submit Bursary Form'} <FaPaperPlane size={11} />
                                         </button>
                                     </div>
                                 )}

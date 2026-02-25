@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import ThemeToggle from '../components/ThemeToggle';
 import {
     FaCheck, FaTimes, FaSignOutAlt, FaSync, FaCaretDown, FaUserTie,
-    FaIdCard, FaHospital, FaBook, FaMoneyCheckAlt, FaEye, FaFileAlt
+    FaIdCard, FaHospital, FaBook, FaMoneyCheckAlt, FaEye, FaFileAlt, FaDownload
 } from 'react-icons/fa';
 
 function OfficerDashboard() {
@@ -140,9 +140,23 @@ function OfficerDashboard() {
                             {data.queue.length} student{data.queue.length !== 1 ? 's' : ''} pending review
                         </p>
                     </div>
-                    <button onClick={() => fetchDashboard(true)} disabled={refreshing} className="btn-ghost-glass">
-                        <FaSync size={12} style={refreshing ? { animation: 'spin 0.8s linear infinite' } : {}} /> {refreshing ? 'Refreshing...' : 'Refresh'}
-                    </button>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                        {isBursaryOfficer && (
+                            <button onClick={async () => {
+                                try {
+                                    const res = await api.get('/officer/collection-data', { responseType: 'blob' });
+                                    const url = window.URL.createObjectURL(new Blob([res.data]));
+                                    const a = document.createElement('a'); a.href = url; a.download = 'certificate_collections.csv'; a.click();
+                                    toast.success('CSV downloaded');
+                                } catch (err) { toast.error('Download failed'); }
+                            }} className="btn-ghost-glass" style={{ fontSize: 'var(--text-sm)' }}>
+                                <FaDownload size={12} /> Collection Data
+                            </button>
+                        )}
+                        <button onClick={() => fetchDashboard(true)} disabled={refreshing} className="btn-ghost-glass">
+                            <FaSync size={12} style={refreshing ? { animation: 'spin 0.8s linear infinite' } : {}} /> {refreshing ? 'Refreshing...' : 'Refresh'}
+                        </button>
+                    </div>
                 </div>
 
                 {data.queue.length === 0 ? (
@@ -198,7 +212,17 @@ function OfficerDashboard() {
                                         )}
                                         {isButhOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.buth_hospital_number || '—'}</td>}
                                         {isLibraryOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.library_thesis_clearance || '—'}</td>}
-                                        {isBursaryOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.bursary_account_number || '—'}</td>}
+                                        {isBursaryOfficer && (
+                                            <td style={{ fontSize: 'var(--text-sm)' }}>
+                                                <div>{s.bursary_account || '—'}</div>
+                                                {s.certificate_collection && (
+                                                    <span className={`badge-glass ${s.certificate_collection.self_collection ? 'badge-success' : 'badge-warning'}`}
+                                                        style={{ fontSize: '10px', marginTop: 4, display: 'inline-block' }}>
+                                                        {s.certificate_collection.self_collection ? 'Self' : `Proxy: ${s.certificate_collection.collector_name}`}
+                                                    </span>
+                                                )}
+                                            </td>
+                                        )}
                                         <td style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>
                                             <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
                                                 <button onClick={() => { setShowRejectModal(s.clearance_id); setRejectReason(''); }}

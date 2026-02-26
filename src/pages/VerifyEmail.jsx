@@ -66,8 +66,8 @@ function VerifyEmail() {
             const res = await api.post('/verify-email', { email, otp: code });
             toast.success(res.data.message);
             setVerified(true);
-            // Redirect to login after a moment
-            setTimeout(() => navigate('/', { state: { autoFillEmail: email } }), 2000);
+            // Redirect to login after a moment, passing the email so it auto-fills
+            setTimeout(() => navigate('/', { state: { email } }), 2000);
         } catch (err) {
             toast.error(err.response?.data?.message || 'Verification failed');
         } finally { setLoading(false); }

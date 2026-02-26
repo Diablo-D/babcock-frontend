@@ -17,8 +17,6 @@ function OfficerDashboard() {
     const [showRejectModal, setShowRejectModal] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
     const [previewImage, setPreviewImage] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [deptFilter, setDeptFilter] = useState('');
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
@@ -83,15 +81,6 @@ function OfficerDashboard() {
 
     const deptIcon = isIdOfficer ? <FaIdCard /> : isButhOfficer ? <FaHospital /> :
         isLibraryOfficer ? <FaBook /> : isBursaryOfficer ? <FaMoneyCheckAlt /> : <FaFileAlt />;
-
-    // Derived filtering
-    const departmentsList = [...new Set(data.queue.map(s => s.student_dept))].filter(Boolean);
-    const filteredQueue = data.queue.filter(s => {
-        const matchesSearch = (s.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (s.matric_no || '').toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesDept = deptFilter ? s.student_dept === deptFilter : true;
-        return matchesSearch && matchesDept;
-    });
 
     return (
         <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -171,107 +160,133 @@ function OfficerDashboard() {
                     </div>
                 </div>
 
-                {/* Filters */}
-                {data.queue.length > 0 && (
-                    <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1, minWidth: 250 }}>
-                            <input type="text" className="glass-input" placeholder="Search by name or matric no..."
-                                value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                        </div>
-                        <div style={{ width: 250 }}>
-                            <select className="glass-select" value={deptFilter} onChange={e => setDeptFilter(e.target.value)}>
-                                <option value="">All Departments</option>
-                                {departmentsList.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                )}
-
-                {filteredQueue.length === 0 ? (
+                {data.queue.length === 0 ? (
                     <div className="glass-card" style={{ textAlign: 'center', padding: 'var(--space-16)' }}>
                         <FaCheck size={32} style={{ color: 'var(--success)', marginBottom: 'var(--space-4)' }} />
                         <h4 style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 4 }}>All Caught Up!</h4>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>No students matching criteria.</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>No students pending in your queue.</p>
                     </div>
-                ) : (
-                    <div className="glass-table-wrap">
-                        <table className="glass-table" style={{ width: '100%' }}>
-                            <thead>
-                                <tr>
-                                    <th style={{ paddingLeft: 'var(--space-6)' }}>Student</th>
-                                    <th>Matric No</th>
-                                    <th>Date</th>
-                                    {isIdOfficer && <th>ID Card</th>}
-                                    {isButhOfficer && <th>Hospital No</th>}
-                                    {isLibraryOfficer && <th>Thesis</th>}
-                                    {isBursaryOfficer && <th>Account</th>}
-                                    <th style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredQueue.map(s => (
-                                    <tr key={s.clearance_id}>
-                                        <td style={{ paddingLeft: 'var(--space-6)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                                <div style={{
-                                                    width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                                                    background: 'var(--accent-soft)', color: 'var(--accent)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    fontWeight: 700, fontSize: 'var(--text-xs)',
-                                                }}>
-                                                    {(s.student_name || '??').substring(0, 2).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{s.student_name}</div>
-                                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.student_dept}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{s.matric_no}</span></td>
-                                        <td style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
-                                            {s.date ? new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                                        </td>
-                                        {isIdOfficer && (
-                                            <td>
-                                                {s.id_card_path ? (
-                                                    <button onClick={() => setPreviewImage(`${api.defaults.baseURL}/../storage/${s.id_card_path}`)}
-                                                        className="btn-outline-glass" style={{ padding: '4px 10px', fontSize: 'var(--text-xs)' }}>
-                                                        <FaEye size={10} /> View
-                                                    </button>
-                                                ) : <span className="badge-glass badge-warning">Not Uploaded</span>}
-                                            </td>
-                                        )}
-                                        {isButhOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.buth_hospital_number || '—'}</td>}
-                                        {isLibraryOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.library_thesis_clearance || '—'}</td>}
-                                        {isBursaryOfficer && (
-                                            <td style={{ fontSize: 'var(--text-sm)' }}>
-                                                <div>{s.bursary_account || '—'}</div>
-                                                {s.certificate_collection && (
-                                                    <span className={`badge-glass ${s.certificate_collection.self_collection ? 'badge-success' : 'badge-warning'}`}
-                                                        style={{ fontSize: '10px', marginTop: 4, display: 'inline-block' }}>
-                                                        {s.certificate_collection.self_collection ? 'Self' : `Proxy: ${s.certificate_collection.collector_name}`}
-                                                    </span>
+                ) : (() => {
+                    const filteredQueue = data.queue.filter(s => {
+                        const matchSearch = String(s.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            String(s.matric_no).toLowerCase().includes(searchTerm.toLowerCase());
+                        const matchGroup = groupFilter === 'All' || s.academic_dept === groupFilter;
+                        return matchSearch && matchGroup;
+                    });
+                    const uniqueDepts = Array.from(new Set(data.queue.map(s => s.academic_dept).filter(Boolean)));
+
+                    return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Search by name or matric..."
+                                    className="glass-input"
+                                    style={{ flex: '1 1 300px' }}
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                />
+                                {uniqueDepts.length > 0 && (
+                                    <select
+                                        className="glass-select"
+                                        style={{ flex: '0 1 200px' }}
+                                        value={groupFilter}
+                                        onChange={e => setGroupFilter(e.target.value)}
+                                    >
+                                        <option value="All">All Departments</option>
+                                        {uniqueDepts.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                                    </select>
+                                )}
+                            </div>
+                            <div className="glass-table-wrap" style={{ width: '100%', overflowX: 'auto' }}>
+                                <table className="glass-table" style={{ width: '100%' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ paddingLeft: 'var(--space-6)' }}>Student</th>
+                                            <th>Matric No</th>
+                                            <th>Date</th>
+                                            {isIdOfficer && <th>ID Card</th>}
+                                            {isButhOfficer && <th>Hospital No</th>}
+                                            {isLibraryOfficer && <th>Thesis</th>}
+                                            {isBursaryOfficer && <th>Account</th>}
+                                            <th style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredQueue.map(s => (
+                                            <tr key={s.clearance_id}>
+                                                <td style={{ paddingLeft: 'var(--space-6)' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                                        <div style={{
+                                                            width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                                                            background: 'var(--accent-soft)', color: 'var(--accent)',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            fontWeight: 700, fontSize: 'var(--text-xs)',
+                                                        }}>
+                                                            {(s.name || '??').substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{s.name}</span>
+                                                            {s.academic_dept && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.academic_dept}</span>}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{s.matric_no}</span></td>
+                                                <td style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
+                                                    {s.date ? new Date(s.date).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                </td>
+                                                {isIdOfficer && (
+                                                    <td>
+                                                        {s.id_card_url ? (
+                                                            <button onClick={() => setPreviewImage(s.id_card_url)}
+                                                                className="btn-outline-glass" style={{ padding: '4px 10px', fontSize: 'var(--text-xs)' }}>
+                                                                <FaEye size={10} /> View
+                                                            </button>
+                                                        ) : <span className="badge-glass badge-warning">Not Uploaded</span>}
+                                                    </td>
                                                 )}
-                                            </td>
-                                        )}
-                                        <td style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>
-                                            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                                <button onClick={() => { setShowRejectModal(s.clearance_id); setRejectReason(''); }}
-                                                    className="btn-danger-glass" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
-                                                    <FaTimes size={10} /> Reject
-                                                </button>
-                                                <button onClick={() => handleApprove(s.clearance_id)}
-                                                    className="btn-success-glass" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
-                                                    <FaCheck size={10} /> Approve
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                                {isButhOfficer && <td style={{ fontSize: 'var(--text-sm)' }}>{s.buth_number || '—'}</td>}
+                                                {isLibraryOfficer && (
+                                                    <td>
+                                                        {s.library_thesis_url ? (
+                                                            <button onClick={() => setPreviewImage(s.library_thesis_url)}
+                                                                className="btn-outline-glass" style={{ padding: '4px 10px', fontSize: 'var(--text-xs)' }}>
+                                                                <FaEye size={10} /> View
+                                                            </button>
+                                                        ) : <span className="badge-glass badge-warning">Not Uploaded</span>}
+                                                    </td>
+                                                )}
+                                                {isBursaryOfficer && (
+                                                    <td style={{ fontSize: 'var(--text-sm)' }}>
+                                                        <div>{s.bursary_account || '—'}</div>
+                                                        {s.certificate_collection && (
+                                                            <span className={`badge-glass ${s.certificate_collection.self_collection ? 'badge-success' : 'badge-warning'}`}
+                                                                style={{ fontSize: '10px', marginTop: 4, display: 'inline-block' }}>
+                                                                {s.certificate_collection.self_collection ? 'Self' : `Proxy: ${s.certificate_collection.collector_name}`}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                )}
+                                                <td style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>
+                                                    <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                                                        <button onClick={() => { setShowRejectModal(s.clearance_id); setRejectReason(''); }}
+                                                            className="btn-danger-glass" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
+                                                            <FaTimes size={10} /> Reject
+                                                        </button>
+                                                        <button onClick={() => handleApprove(s.clearance_id)}
+                                                            className="btn-success-glass" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>
+                                                            <FaCheck size={10} /> Approve
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* ── Reject Modal ── */}

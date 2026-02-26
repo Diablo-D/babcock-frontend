@@ -24,6 +24,17 @@ import VerifyCertificate from './pages/VerifyCertificate';
 import AdminLayout from './components/AdminLayout';
 
 function App() {
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (window.innerWidth > 768) {
+                document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+                document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+            }
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
     return (
         <ThemeProvider>
             <ErrorBoundary>

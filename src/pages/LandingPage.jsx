@@ -100,7 +100,7 @@ function LandingPage() {
                                 color: 'var(--gold-300)', fontSize: 'var(--text-xs)', fontWeight: 600,
                                 marginBottom: 'var(--space-6)', letterSpacing: '0.04em',
                             }}>
-                                <FaBolt size={10} color="var(--gold-400)" /> PREMIUM DIGITAL CLEARANCE
+                                <FaBolt size={10} color="var(--gold-400)" /> DIGITAL CLEARANCE
                             </p>
 
                             <h1 style={{
@@ -114,17 +114,34 @@ function LandingPage() {
 
                             <p style={{
                                 fontSize: 'var(--text-lg)', color: 'rgba(255,255,255,0.85)',
-                                lineHeight: 1.7, marginBottom: 'var(--space-8)', maxWidth: 440,
+                                lineHeight: 1.7, marginBottom: 'var(--space-5)', maxWidth: 440,
                             }}>
                                 The official Babcock University clearance platform. Process your graduation clearance digitally — no queues, no paperwork.
                             </p>
+
+                            {/* Added Benefits List */}
+                            <ul style={{
+                                listStyle: 'none', padding: 0, margin: '0 0 var(--space-8) 0',
+                                display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
+                                color: 'rgba(255,255,255,0.75)', fontSize: 'var(--text-base)'
+                            }}>
+                                <li style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <FaCheckCircle color="var(--success)" size={14} /> Skip the long physical queues and paperwork
+                                </li>
+                                <li style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <FaCheckCircle color="var(--success)" size={14} /> Track your clearance progress in real-time
+                                </li>
+                                <li style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <FaCheckCircle color="var(--success)" size={14} /> Download securely verified PDF certificates
+                                </li>
+                            </ul>
 
                             {/* Feature Pills */}
                             <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                                 {[
                                     { icon: <FaUserGraduate size={13} />, text: 'For Students' },
                                     { icon: <FaLock size={13} />, text: 'Secure' },
-                                    { icon: <FaCheckCircle size={13} />, text: 'Real-Time' },
+                                    { icon: <FaCheckCircle size={13} />, text: 'Verified' },
                                 ].map((pill, i) => (
                                     <span key={i} style={{
                                         display: 'inline-flex', alignItems: 'center', gap: 6,

@@ -8,14 +8,12 @@ function LandingPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [loading, setLoading] = useState(false);
-    const [creds, setCreds] = useState({ identifier: location.state?.autoFillEmail || '', password: '' });
+    const [creds, setCreds] = useState({ identifier: '', password: '' });
     const [loginError, setLoginError] = useState('');
 
     useEffect(() => {
-        if (location.state?.autoFillEmail) {
-            setCreds(prev => ({ ...prev, identifier: location.state.autoFillEmail }));
-            // Optionally clear the state to prevent infinite auto-fills on back navigation
-            window.history.replaceState({}, document.title)
+        if (location.state?.email) {
+            setCreds(prev => ({ ...prev, identifier: location.state.email }));
         }
     }, [location.state]);
 
@@ -89,54 +87,56 @@ function LandingPage() {
                     flexWrap: 'wrap',
                 }}>
                     {/* Left — Text */}
-                    <div style={{ flex: '1 1 420px', maxWidth: 560 }}>
-                        <p style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                            padding: '6px 14px', borderRadius: 'var(--radius-full)',
-                            background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            color: 'var(--cyan-200)', fontSize: 'var(--text-xs)', fontWeight: 600,
-                            marginBottom: 'var(--space-6)', letterSpacing: '0.04em',
-                        }}>
-                            <FaBolt size={10} /> DIGITAL CLEARANCE PLATFORM
-                        </p>
+                    <div style={{ flex: '1 1 420px', maxWidth: 560, position: 'relative' }}>
+                        {/* GIMMICK: Glowing moving orb behind text */}
+                        <div className="glowing-orb" style={{ top: '-20%', left: '-10%' }}></div>
 
-                        <h1 style={{
-                            fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', fontWeight: 800,
-                            lineHeight: 1.1, color: '#fff', marginBottom: 'var(--space-6)',
-                            letterSpacing: '-0.03em',
-                        }}>
-                            Clearance Made<br />
-                            <span style={{
-                                background: 'linear-gradient(135deg, var(--cyan-300), var(--cyan-400))',
-                                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                            }}>Effortless.</span>
-                        </h1>
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                            <p style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                padding: '6px 14px', borderRadius: 'var(--radius-full)',
+                                background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                color: 'var(--gold-300)', fontSize: 'var(--text-xs)', fontWeight: 600,
+                                marginBottom: 'var(--space-6)', letterSpacing: '0.04em',
+                            }}>
+                                <FaBolt size={10} color="var(--gold-400)" /> PREMIUM DIGITAL CLEARANCE
+                            </p>
 
-                        <p style={{
-                            fontSize: 'var(--text-lg)', color: 'rgba(255,255,255,0.7)',
-                            lineHeight: 1.7, marginBottom: 'var(--space-8)', maxWidth: 440,
-                        }}>
-                            The official Babcock University clearance platform. Process your graduation clearance digitally — no queues, no paperwork.
-                        </p>
+                            <h1 style={{
+                                fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', fontWeight: 800,
+                                lineHeight: 1.1, color: '#fff', marginBottom: 'var(--space-6)',
+                                letterSpacing: '-0.03em',
+                            }}>
+                                Clearance Made<br />
+                                <span className="text-shimmer-gold">Effortless.</span>
+                            </h1>
 
-                        {/* Feature Pills */}
-                        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                            {[
-                                { icon: <FaUserGraduate size={13} />, text: 'For Students' },
-                                { icon: <FaLock size={13} />, text: 'Secure' },
-                                { icon: <FaCheckCircle size={13} />, text: 'Real-Time' },
-                            ].map((pill, i) => (
-                                <span key={i} style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                                    padding: '8px 16px', borderRadius: 'var(--radius-full)',
-                                    background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)',
-                                    border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)',
-                                    fontSize: 'var(--text-xs)', fontWeight: 500,
-                                }}>
-                                    {pill.icon} {pill.text}
-                                </span>
-                            ))}
+                            <p style={{
+                                fontSize: 'var(--text-lg)', color: 'rgba(255,255,255,0.85)',
+                                lineHeight: 1.7, marginBottom: 'var(--space-8)', maxWidth: 440,
+                            }}>
+                                The official Babcock University clearance platform. Process your graduation clearance digitally — no queues, no paperwork.
+                            </p>
+
+                            {/* Feature Pills */}
+                            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                                {[
+                                    { icon: <FaUserGraduate size={13} />, text: 'For Students' },
+                                    { icon: <FaLock size={13} />, text: 'Secure' },
+                                    { icon: <FaCheckCircle size={13} />, text: 'Real-Time' },
+                                ].map((pill, i) => (
+                                    <span key={i} style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                                        padding: '8px 16px', borderRadius: 'var(--radius-full)',
+                                        background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.9)',
+                                        fontSize: 'var(--text-xs)', fontWeight: 500,
+                                    }}>
+                                        {pill.icon} {pill.text}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </div>
 

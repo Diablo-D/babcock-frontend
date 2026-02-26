@@ -71,9 +71,12 @@ export default function NotificationBell() {
                 <div style={{
                     position: 'absolute', right: 0, top: '110%',
                     width: 320, maxHeight: 400, overflowY: 'auto',
-                    background: 'var(--bg-card)', border: '1px solid var(--border-default)',
-                    borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
-                    zIndex: 999,
+                    background: 'var(--glass-bg-strong)',
+                    backdropFilter: 'var(--glass-blur)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius-lg)',
+                    boxShadow: 'var(--glass-shadow-lg)',
+                    zIndex: 99999,
                 }}>
                     <div style={{
                         padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)',

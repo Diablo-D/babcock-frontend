@@ -70,8 +70,24 @@ body {
   min-height: 100vh;
   background-color: var(--bg-body);
   background-image: var(--gradient-mesh);
+  background-size: 200% 200%;
+  animation: moveMesh 20s ease-in-out infinite alternate;
   transition: background-color var(--duration-slow) var(--ease-out);
   position: relative;
+}
+
+@keyframes moveMesh {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  50% {
+    background-position: 100% 100%;
+  }
+
+  100% {
+    background-position: 0% 100%;
+  }
 }
 
 /* Landing page — photo background with overlay */
@@ -152,7 +168,6 @@ body {
   border-right: 1px solid var(--border-default);
   min-height: 100vh;
   transition: background var(--duration-slow) var(--ease-out);
-  z-index: 50;
 }
 
 /* =========================================
@@ -689,6 +704,41 @@ body {
   50% {
     transform: translateY(-6px);
   }
+}
+
+/* Gimmicks for Landing Page */
+@keyframes shimmerText {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.text-shimmer-gold {
+  background: linear-gradient(to right,
+      var(--gold-500) 20%,
+      var(--gold-200) 40%,
+      var(--gold-500) 60%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmerText 4s linear infinite;
+}
+
+.glowing-orb {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(201, 160, 34, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(40px);
+  animation: pulse-glow 6s ease-in-out infinite alternate, float 8s ease-in-out infinite;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* Page enter animation */

@@ -741,6 +741,28 @@ body {
   pointer-events: none;
 }
 
+/* Cursor-following gimmick for Light Theme */
+.theme-light::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  background: radial-gradient(600px circle at var(--mouse-x, 50vw) var(--mouse-y, 50vh),
+      rgba(201, 160, 34, 0.05),
+      transparent 40%);
+  transition: opacity 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .theme-light::after {
+    display: none;
+  }
+}
+
 /* Page enter animation */
 .page-enter {
   animation: fadeIn var(--duration-slow) var(--ease-out),

@@ -67,7 +67,7 @@ function VerifyEmail() {
             toast.success(res.data.message);
             setVerified(true);
             // Redirect to login after a moment
-            setTimeout(() => navigate('/'), 2000);
+            setTimeout(() => navigate('/', { state: { autoFillEmail: email } }), 2000);
         } catch (err) {
             toast.error(err.response?.data?.message || 'Verification failed');
         } finally { setLoading(false); }

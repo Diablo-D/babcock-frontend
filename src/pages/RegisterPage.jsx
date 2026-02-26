@@ -150,7 +150,7 @@ function RegisterPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
                             <div>
                                 <label style={labelStyle}>Surname *</label>
-                                <input className="glass-input" placeholder="e.g. Ogunlade" value={regData.surname} onChange={e => setRegData({ ...regData, surname: e.target.value })} />
+                                <input className="glass-input" placeholder="e.g. Bolujo" value={regData.surname} onChange={e => setRegData({ ...regData, surname: e.target.value })} />
                             </div>
                             <div>
                                 <label style={labelStyle}>First Name *</label>

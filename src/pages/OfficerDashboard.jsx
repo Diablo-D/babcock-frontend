@@ -17,6 +17,8 @@ function OfficerDashboard() {
     const [showRejectModal, setShowRejectModal] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
     const [previewImage, setPreviewImage] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [deptFilter, setDeptFilter] = useState('');
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
@@ -81,6 +83,15 @@ function OfficerDashboard() {
 
     const deptIcon = isIdOfficer ? <FaIdCard /> : isButhOfficer ? <FaHospital /> :
         isLibraryOfficer ? <FaBook /> : isBursaryOfficer ? <FaMoneyCheckAlt /> : <FaFileAlt />;
+
+    // Derived filtering
+    const departmentsList = [...new Set(data.queue.map(s => s.student_dept))].filter(Boolean);
+    const filteredQueue = data.queue.filter(s => {
+        const matchesSearch = (s.student_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.matric_no || '').toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesDept = deptFilter ? s.student_dept === deptFilter : true;
+        return matchesSearch && matchesDept;
+    });
 
     return (
         <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -160,15 +171,31 @@ function OfficerDashboard() {
                     </div>
                 </div>
 
-                {data.queue.length === 0 ? (
+                {/* Filters */}
+                {data.queue.length > 0 && (
+                    <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 250 }}>
+                            <input type="text" className="glass-input" placeholder="Search by name or matric no..."
+                                value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                        </div>
+                        <div style={{ width: 250 }}>
+                            <select className="glass-select" value={deptFilter} onChange={e => setDeptFilter(e.target.value)}>
+                                <option value="">All Departments</option>
+                                {departmentsList.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                )}
+
+                {filteredQueue.length === 0 ? (
                     <div className="glass-card" style={{ textAlign: 'center', padding: 'var(--space-16)' }}>
                         <FaCheck size={32} style={{ color: 'var(--success)', marginBottom: 'var(--space-4)' }} />
                         <h4 style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 4 }}>All Caught Up!</h4>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>No students pending in your queue.</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>No students matching criteria.</p>
                     </div>
                 ) : (
                     <div className="glass-table-wrap">
-                        <table className="glass-table">
+                        <table className="glass-table" style={{ width: '100%' }}>
                             <thead>
                                 <tr>
                                     <th style={{ paddingLeft: 'var(--space-6)' }}>Student</th>
@@ -182,7 +209,7 @@ function OfficerDashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.queue.map(s => (
+                                {filteredQueue.map(s => (
                                     <tr key={s.clearance_id}>
                                         <td style={{ paddingLeft: 'var(--space-6)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -192,9 +219,12 @@ function OfficerDashboard() {
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                     fontWeight: 700, fontSize: 'var(--text-xs)',
                                                 }}>
-                                                    {(s.name || '??').substring(0, 2).toUpperCase()}
+                                                    {(s.student_name || '??').substring(0, 2).toUpperCase()}
                                                 </div>
-                                                <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{s.name}</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{s.student_name}</div>
+                                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.student_dept}</div>
+                                                </div>
                                             </div>
                                         </td>
                                         <td><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{s.matric_no}</span></td>

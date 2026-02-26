@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import ThemeToggle from '../components/ThemeToggle';
 import { FaArrowRight, FaShieldAlt, FaBolt, FaCloudUploadAlt, FaChevronDown, FaUserGraduate, FaCheckCircle, FaLock } from 'react-icons/fa';
 
 function LandingPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
-    const [creds, setCreds] = useState({ identifier: '', password: '' });
+    const [creds, setCreds] = useState({ identifier: location.state?.autoFillEmail || '', password: '' });
     const [loginError, setLoginError] = useState('');
+
+    useEffect(() => {
+        if (location.state?.autoFillEmail) {
+            setCreds(prev => ({ ...prev, identifier: location.state.autoFillEmail }));
+            // Optionally clear the state to prevent infinite auto-fills on back navigation
+            window.history.replaceState({}, document.title)
+        }
+    }, [location.state]);
 
     const handleLogin = async (e) => {
         e.preventDefault();

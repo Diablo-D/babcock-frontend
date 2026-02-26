@@ -152,6 +152,7 @@ body {
   border-right: 1px solid var(--border-default);
   min-height: 100vh;
   transition: background var(--duration-slow) var(--ease-out);
+  z-index: 50;
 }
 
 /* =========================================

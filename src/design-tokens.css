@@ -136,12 +136,12 @@
     --danger: #c53030;
     --danger-soft: rgba(197, 48, 48, 0.1);
 
-    --glass-blur: blur(40px) saturate(180%);
-    --glass-bg: rgba(255, 255, 255, 0.65);
-    --glass-bg-strong: rgba(255, 255, 255, 0.82);
-    --glass-border: rgba(255, 255, 255, 0.5);
-    --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
-    --glass-shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12), 0 4px 16px rgba(15, 23, 42, 0.06);
+    --glass-blur: blur(60px) saturate(200%);
+    --glass-bg: rgba(255, 255, 255, 0.45);
+    --glass-bg-strong: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.02);
+    --glass-shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.1), 0 4px 16px rgba(15, 23, 42, 0.04);
 
     --table-row-alt: rgba(248, 250, 252, 0.6);
     --table-row-hover: rgba(239, 243, 255, 0.5);

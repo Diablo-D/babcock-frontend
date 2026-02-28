@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { FaArrowLeft } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import ThemeToggle from '../components/ThemeToggle';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
-// 🎓 THE OFFICIAL BABCOCK ACADEMIC STRUCTURE
+// Babcock Academic Structure
 const academicStructure = {
     "School of Computing": {
         departments: ["Computer Science", "Information Technology", "Software Engineering"],
@@ -11,7 +13,7 @@ const academicStructure = {
     },
     "School of Education & Humanities": {
         departments: ["Education", "History & International Studies", "Languages & Literary Studies", "Music & Creative Arts", "Religious Studies"],
-        courses: ["B.A. (Hons.) Christian Religious Studies", "B.A. (Hons.) Christian Theology", "B.A. (Hons.) English Studies", "B.A. (Hons.) French and Foreign Studies", "B.A. (Hons.) French Studies", "B.A. (Hons.) History & International Studies", "B.A. (Hons.) Music", "B.A.Ed. (Hons.) English Education", "B.Ed. (Hons.) Educational Management", "B.Sc.Ed. (Hons.) Business Education", "B.Sc.Ed. (Hons.) Economics Education", "B.Sc.Ed. (Hons.) Guidance and Counselling"]
+        courses: ["B.A. (Hons.) Christian Religious Studies", "B.A. (Hons.) English Studies", "B.A. (Hons.) History & International Studies", "B.A. (Hons.) Music", "B.Ed. (Hons.) Educational Management", "B.Sc.Ed. (Hons.) Business Education"]
     },
     "School of Environmental Sciences": {
         departments: ["Architecture", "Estate Management"],
@@ -27,7 +29,7 @@ const academicStructure = {
     },
     "School of Management Sciences": {
         departments: ["Accounting", "Business Administration & Marketing", "Finance", "Information Resources Management"],
-        courses: ["B.Sc. (Hons.) Accounting", "B.Sc. (Hons.) Business Administration", "B.Sc. (Hons.) Finance", "B.Sc. (Hons.) Information Resources Management", "B.Sc. (Hons.) Marketing"]
+        courses: ["B.Sc. (Hons.) Accounting", "B.Sc. (Hons.) Business Administration", "B.Sc. (Hons.) Finance", "B.Sc. (Hons.) Marketing"]
     },
     "School of Science & Technology": {
         departments: ["Agriculture & Industrial Technology", "Basic Sciences", "Microbiology"],
@@ -35,7 +37,7 @@ const academicStructure = {
     },
     "Veronica Adeleke School of Social Sciences": {
         departments: ["Economics", "Mass Communication", "Political Science and Public Administration", "Social Work"],
-        courses: ["B.Sc. (Hons.) Economics", "B.Sc. (Hons.) Mass Communication", "B.Sc. (Hons.) Peace Studies and Conflict Resolution", "B.Sc. (Hons.) Political Science", "B.Sc. (Hons.) Public Administration", "B.Sc. (Hons.) Social Work"]
+        courses: ["B.Sc. (Hons.) Economics", "B.Sc. (Hons.) Mass Communication", "B.Sc. (Hons.) Political Science", "B.Sc. (Hons.) Public Administration", "B.Sc. (Hons.) Social Work"]
     },
     "School of Allied Health Sciences": {
         departments: ["Medical Laboratory Science", "Human Nutrition & Dietetics", "Public Health"],
@@ -59,280 +61,199 @@ const academicStructure = {
     }
 };
 
+const countryCodes = [
+    { code: '+234', label: '🇳🇬' },
+    { code: '+233', label: '🇬🇭' },
+    { code: '+44', label: '🇬🇧' },
+    { code: '+1', label: '🇺🇸' },
+    { code: '+27', label: '🇿🇦' },
+    { code: '+254', label: '🇰🇪' },
+];
+
 function RegisterPage() {
     const navigate = useNavigate();
-    
-    const [isSignUp, setIsSignUp] = useState(true); 
     const [loading, setLoading] = useState(false);
-
-    // Notification States
-    const [loginError, setLoginError] = useState('');
     const [regError, setRegError] = useState('');
-    const [regSuccess, setRegSuccess] = useState('');
-
-    const countryCodes = [
-        { code: '+234', label: '🇳🇬 NG' },
-        { code: '+233', label: '🇬🇭 GH' },
-        { code: '+44',  label: '🇬🇧 UK' },
-        { code: '+1',   label: '🇺🇸 US' },
-        { code: '+1',   label: '🇨🇦 CA' },
-        { code: '+27',  label: '🇿🇦 ZA' },
-        { code: '+254', label: '🇰🇪 KE' },
-    ];
-
-    const [loginCreds, setLoginCreds] = useState({ identifier: '', password: '' });
-    
     const [regData, setRegData] = useState({
         surname: '', first_name: '', middle_name: '',
         matric_no: '', email: '', personal_email: '', password: '',
-        phone_code: '+234', phone_number: '', 
-        gender: 'Male', 
-        school: '', 
-        academic_department: '', 
-        course: ''
+        phone_code: '+234', phone_number: '',
+        gender: 'Male', school: '', academic_department: '', course: '',
+        expected_graduation_date: ''
     });
 
-    // --- SMART SCHOOL SELECTION ---
     const handleSchoolChange = (e) => {
-        const selectedSchool = e.target.value;
-        // Reset department and course when school changes to prevent mismatched data
-        setRegData({ ...regData, school: selectedSchool, academic_department: '', course: '' });
+        setRegData({ ...regData, school: e.target.value, academic_department: '', course: '' });
     };
 
-    // --- 1. HANDLE REGISTER ---
     const handleRegister = async (e) => {
         e.preventDefault();
         setRegError('');
-        setRegSuccess('');
-        
-        // Strict Validation
-        if (!regData.surname || !regData.first_name || !regData.email || !regData.personal_email || !regData.matric_no || !regData.phone_number || !regData.academic_department || !regData.course || !regData.password) {
-            setRegError("⚠️ Please fill in all required fields, including School, Department, and Course.");
+        if (!regData.surname || !regData.first_name || !regData.email || !regData.personal_email ||
+            !regData.matric_no || !regData.phone_number || !regData.academic_department || !regData.course || !regData.password || !regData.expected_graduation_date) {
+            setRegError('Please fill in all required fields.');
             return;
         }
-
-        const matricRegex = /^(\d{2})\/(\d{4})$/;
-        const match = regData.matric_no.match(matricRegex);
-
-        if (!match) {
-            setRegError("⚠️ Invalid Matric Number! Must be format: 22/1234");
+        if (!/^(\d{2})\/(\d{4})$/.test(regData.matric_no)) {
+            setRegError('Invalid Matric Number. Use format: 22/1234');
             return;
         }
-
+        if (regData.password.length < 8) {
+            setRegError('Password must be at least 8 characters.');
+            return;
+        }
         setLoading(true);
         try {
-            const fullPayload = {
-                ...regData,
-                gsm_no: `${regData.phone_code}${regData.phone_number}`
-            };
-
-            await api.post('/register', fullPayload);
-            
-            setRegSuccess("🎉 Registration Successful! Redirecting to login...");
-            setTimeout(() => {
-                setIsSignUp(false); 
-                setRegSuccess(''); 
-            }, 2500);
-
+            const res = await api.post('/register', { ...regData, gsm_no: `${regData.phone_code}${regData.phone_number}` });
+            toast.success('Check your Babcock email for a verification code!');
+            navigate('/verify-email', { state: { email: res.data.email, token: res.data.token } });
         } catch (err) {
-            setRegError(err.response?.data?.message || "Registration Failed.");
-        } finally {
-            setLoading(false);
-        }
+            setRegError(err.response?.data?.message || 'Registration failed.');
+        } finally { setLoading(false); }
     };
 
-    // --- 2. HANDLE LOGIN ---
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setLoginError('');
-
-        if (!loginCreds.identifier || !loginCreds.password) {
-            setLoginError('⚠️ Please fill in all fields.');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const res = await api.post('/login', loginCreds);
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user_role', res.data.user.role);
-            localStorage.setItem('user_name', res.data.user.name);
-            
-            const role = res.data.user.role;
-            if(role === 'student') navigate('/student/dashboard');
-            else if(role === 'officer') navigate('/officer/dashboard');
-            else if(role === 'super_admin') navigate('/admin/dashboard');
-        } catch (err) {
-            setLoginError(err.response?.data?.message || "Invalid credentials.");
-        } finally {
-            setLoading(false);
-        }
+    const labelStyle = {
+        display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600,
+        color: 'var(--text-secondary)', marginBottom: 4,
+        textTransform: 'uppercase', letterSpacing: '0.05em',
     };
 
     return (
-        <div className="glass-bg d-flex align-items-center justify-content-center position-relative">
-            
-            <div className="glass-back-circle" style={{top: '30px', left: '30px', zIndex: 200}} onClick={() => navigate('/')} title="Back to Home">
-                <FaArrowLeft />
-            </div>
+        <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            {/* Nav */}
+            <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4) var(--space-8)' }}>
+                <button onClick={() => navigate('/')} className="btn-icon-glass">
+                    <FaArrowLeft size={14} />
+                </button>
+                <ThemeToggle />
+            </nav>
 
-            <div className={`container-glass ${isSignUp ? "right-panel-active" : ""}`}>
-                
-                {/* --- REGISTER FORM --- */}
-                <div className="form-container sign-up-container">
-                    <form onSubmit={handleRegister} noValidate className="d-flex flex-column align-items-center justify-content-center h-100 px-5 text-center bg-white bg-opacity-75">
-                        <h2 className="fw-bold text-primary mb-2">Create Account</h2>
-                        <p className="text-muted small mb-3">Join the digital clearance platform</p>
-                        
-                        {regError && <div className="alert border-0 shadow-sm py-2 mb-3 w-100 small text-start rounded-3" style={{backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545', fontWeight: '500'}}>{regError}</div>}
-                        {regSuccess && <div className="alert border-0 shadow-sm py-2 mb-3 w-100 small text-start rounded-3" style={{backgroundColor: 'rgba(25, 135, 84, 0.1)', color: '#198754', fontWeight: '500'}}>{regSuccess}</div>}
+            {/* Main */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+                <div className="glass-panel-strong page-enter" style={{
+                    maxWidth: 580, width: '100%', padding: 'var(--space-8)',
+                }}>
+                    {/* Header */}
+                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+                        <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4, letterSpacing: '-0.02em' }}>
+                            Create Account
+                        </h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                            Join the digital clearance platform
+                        </p>
+                    </div>
 
-                        <div className="w-100 text-start overflow-auto px-2 custom-scrollbar" style={{maxHeight: '440px'}}>
-                            
-                            {/* Row 1: Names */}
-                            <div className="row g-2">
-                                <div className="col-4"><input className="glass-input" placeholder="Surname" onChange={e => setRegData({...regData, surname: e.target.value})} /></div>
-                                <div className="col-4"><input className="glass-input" placeholder="First Name" onChange={e => setRegData({...regData, first_name: e.target.value})} /></div>
-                                <div className="col-4"><input className="glass-input" placeholder="Middle (Opt.)" onChange={e => setRegData({...regData, middle_name: e.target.value})} /></div>
-                            </div>
-                            
-                            {/* Row 2: Emails */}
-                            <div className="row g-2 mt-1">
-                                <div className="col-6"><input className="glass-input" type="email" placeholder="School (@student...)" onChange={e => setRegData({...regData, email: e.target.value})} /></div>
-                                <div className="col-6"><input className="glass-input" type="email" placeholder="Personal Email" onChange={e => setRegData({...regData, personal_email: e.target.value})} /></div>
-                            </div>
-                            
-                            {/* Row 3: Matric & Phone */}
-                            <div className="row g-2 mt-1">
-                                <div className="col-5">
-                                    <input className="glass-input" placeholder="Matric (e.g. 22/1234)" onChange={e => setRegData({...regData, matric_no: e.target.value})} />
-                                </div>
-                                <div className="col-7">
-                                    <div className="input-group">
-                                        <select 
-                                            className="form-select glass-input border-end-0 px-1" 
-                                            style={{maxWidth: '85px', borderTopRightRadius: 0, borderBottomRightRadius: 0}}
-                                            value={regData.phone_code}
-                                            onChange={e => setRegData({...regData, phone_code: e.target.value})}
-                                        >
-                                            {countryCodes.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-                                        </select>
-                                        <input 
-                                            type="tel" 
-                                            className="form-control glass-input border-start-0" 
-                                            style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
-                                            placeholder="Phone Number" 
-                                            onChange={e => setRegData({...regData, phone_number: e.target.value})} 
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                    {regError && <div className="alert-glass alert-error" style={{ marginBottom: 'var(--space-4)' }}>{regError}</div>}
 
-                            {/* Row 4: Gender & School */}
-                            <div className="row g-2 mt-1">
-                                <div className="col-4">
-                                    <select className="glass-input" onChange={e => setRegData({...regData, gender: e.target.value})}>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                </div>
-                                <div className="col-8">
-                                    {/* 🏫 THE SCHOOL DROPDOWN */}
-                                    <select className="glass-input fw-bold text-primary" value={regData.school} onChange={handleSchoolChange} required>
-                                        <option value="">-- Select Your School --</option>
-                                        {Object.keys(academicStructure).map(schoolName => (
-                                            <option key={schoolName} value={schoolName}>{schoolName}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                    <form onSubmit={handleRegister} noValidate>
+                        {/* Names */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                            <div>
+                                <label style={labelStyle}>Surname *</label>
+                                <input className="glass-input" placeholder="e.g. Bolujo" value={regData.surname} onChange={e => setRegData({ ...regData, surname: e.target.value })} />
                             </div>
-
-                            {/* Row 5: Dynamic Department & Course */}
-                            <div className="row g-2 mt-1">
-                                <div className="col-6">
-                                    {/* 🏢 THE DEPARTMENT DROPDOWN */}
-                                    <select 
-                                        className="glass-input" 
-                                        value={regData.academic_department} 
-                                        onChange={e => setRegData({...regData, academic_department: e.target.value})} 
-                                        required
-                                        disabled={!regData.school}
-                                    >
-                                        <option value="">-- Department --</option>
-                                        {regData.school && academicStructure[regData.school].departments.map(dept => (
-                                            <option key={dept} value={dept}>{dept}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="col-6">
-                                    {/* 📚 THE PROGRAMME DROPDOWN */}
-                                    <select 
-                                        className="glass-input text-truncate" 
-                                        value={regData.course} 
-                                        onChange={e => setRegData({...regData, course: e.target.value})} 
-                                        required
-                                        disabled={!regData.school}
-                                    >
-                                        <option value="">-- Programme --</option>
-                                        {regData.school && academicStructure[regData.school].courses.map(course => (
-                                            <option key={course} value={course}>{course}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                            <div>
+                                <label style={labelStyle}>First Name *</label>
+                                <input className="glass-input" placeholder="e.g. Daniel" value={regData.first_name} onChange={e => setRegData({ ...regData, first_name: e.target.value })} />
                             </div>
-
-                            {/* Row 6: Password */}
-                            <input className="glass-input mt-2" type="password" placeholder="Password (Min 6 chars)" onChange={e => setRegData({...regData, password: e.target.value})} />
+                            <div>
+                                <label style={labelStyle}>Middle</label>
+                                <input className="glass-input" placeholder="Optional" value={regData.middle_name} onChange={e => setRegData({ ...regData, middle_name: e.target.value })} />
+                            </div>
                         </div>
 
-                        <button className="glass-btn mt-3 w-100" disabled={loading}>
-                            {loading ? 'Processing...' : 'Sign Up'}
+                        {/* Emails */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                            <div>
+                                <label style={labelStyle}>School Email *</label>
+                                <input className="glass-input" type="email" placeholder="@student.babcock.edu.ng" value={regData.email} onChange={e => setRegData({ ...regData, email: e.target.value })} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Personal Email *</label>
+                                <input className="glass-input" type="email" placeholder="you@gmail.com" value={regData.personal_email} onChange={e => setRegData({ ...regData, personal_email: e.target.value })} />
+                            </div>
+                        </div>
+
+                        {/* Matric & Phone */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                            <div>
+                                <label style={labelStyle}>Matric No *</label>
+                                <input className="glass-input" placeholder="e.g. 22/1234" value={regData.matric_no} onChange={e => setRegData({ ...regData, matric_no: e.target.value })} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Phone *</label>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                    <select className="glass-select" style={{ width: 80, padding: '8px', flexShrink: 0 }} value={regData.phone_code} onChange={e => setRegData({ ...regData, phone_code: e.target.value })}>
+                                        {countryCodes.map(c => <option key={c.code + c.label} value={c.code}>{c.label} {c.code}</option>)}
+                                    </select>
+                                    <input className="glass-input" type="tel" placeholder="8012345678" value={regData.phone_number} onChange={e => setRegData({ ...regData, phone_number: e.target.value })} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Gender & School */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                            <div>
+                                <label style={labelStyle}>Gender</label>
+                                <select className="glass-select" value={regData.gender} onChange={e => setRegData({ ...regData, gender: e.target.value })}>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>School *</label>
+                                <select className="glass-select" value={regData.school} onChange={handleSchoolChange}>
+                                    <option value="">Select your school</option>
+                                    {Object.keys(academicStructure).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Department & Programme */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                            <div>
+                                <label style={labelStyle}>Department *</label>
+                                <select className="glass-select" value={regData.academic_department} onChange={e => setRegData({ ...regData, academic_department: e.target.value })} disabled={!regData.school}>
+                                    <option value="">Select department</option>
+                                    {regData.school && academicStructure[regData.school].departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Programme *</label>
+                                <select className="glass-select" value={regData.course} onChange={e => setRegData({ ...regData, course: e.target.value })} disabled={!regData.school}>
+                                    <option value="">Select programme</option>
+                                    {regData.school && academicStructure[regData.school].courses.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Graduation Date */}
+                        <div style={{ marginBottom: 'var(--space-4)' }}>
+                            <label style={labelStyle}>Expected Graduation Date *</label>
+                            <input className="glass-input" type="month" value={regData.expected_graduation_date}
+                                onChange={e => setRegData({ ...regData, expected_graduation_date: e.target.value })} />
+                        </div>
+
+                        {/* Password */}
+                        <div style={{ marginBottom: 'var(--space-6)' }}>
+                            <label style={labelStyle}>Password * (Min 8 characters)</label>
+                            <input className="glass-input" type="password" placeholder="Create a strong password" value={regData.password} onChange={e => setRegData({ ...regData, password: e.target.value })} />
+                        </div>
+
+                        <button type="submit" disabled={loading} className="btn-primary-glass" style={{ width: '100%', padding: 'var(--space-3) var(--space-6)', fontSize: 'var(--text-base)' }}>
+                            {loading ? 'Creating Account...' : 'Create Account'} <FaArrowRight size={14} />
                         </button>
                     </form>
-                </div>
 
-                {/* --- LOGIN FORM --- */}
-                <div className="form-container sign-in-container">
-                    <form onSubmit={handleLogin} noValidate className="d-flex flex-column align-items-center justify-content-center h-100 px-5 text-center bg-white bg-opacity-75">
-                        <h1 className="fw-bold mb-3 text-dark">Sign In</h1>
-                        <p className="text-muted mb-4">Welcome back to your dashboard</p>
-                        
-                        {loginError && <div className="alert border-0 shadow-sm py-2 mb-3 w-100 small text-start rounded-3" style={{backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545', fontWeight: '500'}}>{loginError}</div>}
-
-                        <input className="glass-input mb-3" placeholder="Email or Matric Number" onChange={e => setLoginCreds({...loginCreds, identifier: e.target.value})} />
-                        <input type="password" className="glass-input mb-2" placeholder="Password" onChange={e => setLoginCreds({...loginCreds, password: e.target.value})} />
-                        
-                        {/* ✅ ADDED: The Forgot Password Link */}
-                        <div className="text-end w-100 mb-3">
-                            <span 
-                                style={{cursor: 'pointer', fontSize: '0.85rem'}} 
-                                className="text-primary fw-bold text-decoration-none" 
-                                onClick={() => navigate('/forgot-password')}
-                            >
-                                Forgot Password?
+                    <div style={{ textAlign: 'center', marginTop: 'var(--space-5)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-default)' }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                            Already have an account?{' '}
+                            <span onClick={() => navigate('/')} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
+                                Sign In
                             </span>
-                        </div>
-
-                        <button className="glass-btn mt-2 w-100" disabled={loading}>{loading ? 'Loading...' : 'Sign In'}</button>
-                    </form>
-                </div>
-
-                {/* --- OVERLAY PANELS --- */}
-                <div className="overlay-container">
-                    <div className="overlay">
-                        <div className="overlay-panel overlay-left">
-                            <h2 className="fw-bold">Already Registered?</h2>
-                            <p className="mb-4">To check your clearance status, please login with your personal info.</p>
-                            <button className="glass-btn ghost" onClick={() => setIsSignUp(false)}>Sign In</button>
-                        </div>
-                        <div className="overlay-panel overlay-right">
-                            <h2 className="fw-bold">New Student?</h2>
-                            <p className="mb-4">Enter your details and start your digital clearance journey with us.</p>
-                            <button className="glass-btn ghost" onClick={() => setIsSignUp(true)}>Register</button>
-                        </div>
+                        </p>
                     </div>
                 </div>
-
             </div>
         </div>
     );

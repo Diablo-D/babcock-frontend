@@ -1,98 +1,149 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { FaArrowLeft } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import ThemeToggle from '../components/ThemeToggle';
+import { FaArrowLeft, FaEnvelope, FaLock, FaKey } from 'react-icons/fa';
 
 function ForgotPassword() {
     const navigate = useNavigate();
-    const [step, setStep] = useState(1); // Step 1: Email, Step 2: OTP & New Password
+    const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    
     const [data, setData] = useState({ email: '', otp: '', newPassword: '' });
 
     const handleSendOtp = async (e) => {
         e.preventDefault();
         setError('');
-        setSuccess('');
         if (!data.email) return setError('Please enter your email.');
-
         setLoading(true);
         try {
             await api.post('/forgot-password', { email: data.email });
-            setSuccess('OTP sent! Please check your email.');
+            toast.success('OTP sent! Check your email.');
             setStep(2);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to send OTP.');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
     const handleResetPassword = async (e) => {
         e.preventDefault();
         setError('');
         if (!data.otp || !data.newPassword) return setError('Please fill all fields.');
-
+        if (data.newPassword.length < 8) return setError('Password must be at least 8 characters.');
         setLoading(true);
         try {
-            await api.post('/reset-password', { 
-                email: data.email, 
-                otp: data.otp, 
-                password: data.newPassword 
-            });
-            alert('Password reset successful! Redirecting to login...');
-            navigate('/register'); // Or wherever your login page is
+            await api.post('/reset-password', { email: data.email, otp: data.otp, password: data.newPassword });
+            toast.success('Password reset successful!');
+            setTimeout(() => navigate('/'), 1500);
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid or expired OTP.');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
+    };
+
+    const labelStyle = {
+        display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600,
+        color: 'var(--text-secondary)', marginBottom: 6,
+        textTransform: 'uppercase', letterSpacing: '0.05em',
     };
 
     return (
-        <div className="glass-bg d-flex align-items-center justify-content-center position-relative" style={{ minHeight: '100vh' }}>
-            
-            <div className="glass-back-circle" style={{top: '30px', left: '30px', zIndex: 200}} onClick={() => navigate(-1)} title="Go Back">
-                <FaArrowLeft />
-            </div>
+        <div className="animated-mesh-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4) var(--space-8)' }}>
+                <button onClick={() => navigate('/')} className="btn-icon-glass">
+                    <FaArrowLeft size={14} />
+                </button>
+                <ThemeToggle />
+            </nav>
 
-            <div className="container-glass p-5 text-center bg-white bg-opacity-75" style={{ maxWidth: '500px', width: '90%', minHeight: 'auto' }}>
-                
-                {step === 1 ? (
-                    <form onSubmit={handleSendOtp} noValidate>
-                        <h2 className="fw-bold mb-3 text-dark">Reset Password</h2>
-                        <p className="text-muted small mb-4">Enter your registered email address (School or Personal) to receive a 6-digit recovery code.</p>
-                        
-                        {error && <div className="alert border-0 shadow-sm py-2 mb-3 w-100 small text-start rounded-3" style={{backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545', fontWeight: '500'}}>{error}</div>}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+                <div className="glass-panel-strong page-enter" style={{ maxWidth: 440, width: '100%', padding: 'var(--space-8)' }}>
 
-                        <input type="email" className="glass-input mb-4" placeholder="Enter your email" value={data.email} onChange={e => setData({...data, email: e.target.value})} />
-                        
-                        <button className="glass-btn w-100 py-3 fw-bold" disabled={loading}>
-                            {loading ? 'Sending...' : 'Send OTP Code'}
-                        </button>
-                    </form>
-                ) : (
-                    <form onSubmit={handleResetPassword} noValidate>
-                        <h2 className="fw-bold mb-3 text-dark">Enter OTP</h2>
-                        <p className="text-muted small mb-4">We sent a 6-digit code to <strong>{data.email}</strong>.</p>
-                        
-                        {error && <div className="alert border-0 shadow-sm py-2 mb-3 w-100 small text-start rounded-3" style={{backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545', fontWeight: '500'}}>{error}</div>}
-                        {success && <div className="alert border-0 shadow-sm py-2 mb-3 w-100 small text-start rounded-3" style={{backgroundColor: 'rgba(25, 135, 84, 0.1)', color: '#198754', fontWeight: '500'}}>{success}</div>}
+                    {step === 1 ? (
+                        <form onSubmit={handleSendOtp} noValidate>
+                            {/* Icon */}
+                            <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+                                <div style={{
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    width: 56, height: 56, borderRadius: 'var(--radius-lg)',
+                                    background: 'var(--accent-soft)', color: 'var(--accent)',
+                                    marginBottom: 'var(--space-4)',
+                                }}>
+                                    <FaEnvelope size={22} />
+                                </div>
+                                <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+                                    Reset Password
+                                </h2>
+                                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                                    Enter your email to receive a recovery code
+                                </p>
+                            </div>
 
-                        <input type="text" className="glass-input mb-3 text-center fw-bold fs-5" placeholder="6-Digit OTP" maxLength="6" style={{letterSpacing: '5px'}} value={data.otp} onChange={e => setData({...data, otp: e.target.value})} />
-                        <input type="password" className="glass-input mb-4" placeholder="Enter New Password (Min 6 chars)" value={data.newPassword} onChange={e => setData({...data, newPassword: e.target.value})} />
-                        
-                        <button className="glass-btn w-100 py-3 fw-bold mb-3" disabled={loading}>
-                            {loading ? 'Resetting...' : 'Reset Password'}
-                        </button>
-                        
-                        <span style={{cursor: 'pointer'}} className="text-muted small fw-bold" onClick={() => { setStep(1); setError(''); setSuccess(''); }}>
-                            ← Back to Email
-                        </span>
-                    </form>
-                )}
+                            {error && <div className="alert-glass alert-error" style={{ marginBottom: 'var(--space-4)' }}>{error}</div>}
+
+                            <div style={{ marginBottom: 'var(--space-5)' }}>
+                                <label style={labelStyle}>Email Address</label>
+                                <input className="glass-input" type="email" placeholder="your@email.com" value={data.email}
+                                    onChange={e => setData({ ...data, email: e.target.value })} />
+                            </div>
+
+                            <button type="submit" disabled={loading} className="btn-primary-glass"
+                                style={{ width: '100%', padding: 'var(--space-3) var(--space-6)', fontSize: 'var(--text-base)' }}>
+                                {loading ? 'Sending...' : 'Send OTP Code'}
+                            </button>
+
+                            <div style={{ textAlign: 'center', marginTop: 'var(--space-5)' }}>
+                                <span onClick={() => navigate('/')} style={{ color: 'var(--accent)', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer' }}>
+                                    ← Back to Sign In
+                                </span>
+                            </div>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleResetPassword} noValidate>
+                            <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+                                <div style={{
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    width: 56, height: 56, borderRadius: 'var(--radius-lg)',
+                                    background: 'var(--success-soft)', color: 'var(--success)',
+                                    marginBottom: 'var(--space-4)',
+                                }}>
+                                    <FaKey size={22} />
+                                </div>
+                                <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+                                    Enter OTP
+                                </h2>
+                                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                                    We sent a 6-digit code to <strong style={{ color: 'var(--text-primary)' }}>{data.email}</strong>
+                                </p>
+                            </div>
+
+                            {error && <div className="alert-glass alert-error" style={{ marginBottom: 'var(--space-4)' }}>{error}</div>}
+
+                            <div style={{ marginBottom: 'var(--space-4)' }}>
+                                <label style={labelStyle}>6-digit OTP</label>
+                                <input className="glass-input" placeholder="000000" maxLength={6}
+                                    style={{ textAlign: 'center', fontSize: 'var(--text-xl)', fontWeight: 700, letterSpacing: '0.5em' }}
+                                    value={data.otp} onChange={e => setData({ ...data, otp: e.target.value })} />
+                            </div>
+
+                            <div style={{ marginBottom: 'var(--space-5)' }}>
+                                <label style={labelStyle}>New Password (Min 8 chars)</label>
+                                <input className="glass-input" type="password" placeholder="Create a new password"
+                                    value={data.newPassword} onChange={e => setData({ ...data, newPassword: e.target.value })} />
+                            </div>
+
+                            <button type="submit" disabled={loading} className="btn-primary-glass"
+                                style={{ width: '100%', padding: 'var(--space-3) var(--space-6)', fontSize: 'var(--text-base)', marginBottom: 'var(--space-3)' }}>
+                                {loading ? 'Resetting...' : 'Reset Password'}
+                            </button>
+
+                            <button type="button" onClick={() => { setStep(1); setError(''); }} className="btn-ghost-glass"
+                                style={{ width: '100%', padding: 'var(--space-3) var(--space-6)', fontSize: 'var(--text-sm)' }}>
+                                ← Back to Email
+                            </button>
+                        </form>
+                    )}
+                </div>
             </div>
         </div>
     );

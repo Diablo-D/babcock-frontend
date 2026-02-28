@@ -1,205 +1,248 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { FaArrowLeft, FaUserPlus, FaUserTie, FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import { FaArrowLeft, FaUserPlus, FaTrash, FaEdit, FaTimes, FaShieldAlt } from 'react-icons/fa';
 
 function ManageOfficers() {
     const [officers, setOfficers] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
-    
-    // NEW: Track if we are editing an existing officer
+    const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', department_id: '' });
+    const [form, setForm] = useState({ name: '', department_id: '', email: '', password: '' });
+    const [permissionsModal, setPermissionsModal] = useState(null); // officer object
+    const [perms, setPerms] = useState({});
+    const [savingPerms, setSavingPerms] = useState(false);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [offRes, deptRes] = await Promise.all([
-                api.get('/admin/officers'),
-                api.get('/admin/departments')
-            ]);
-            setOfficers(offRes.data);
-            setDepartments(deptRes.data);
-        } catch (err) {
-            console.error("Fetch Error:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+            const [oRes, dRes] = await Promise.all([api.get('/admin/officers'), api.get('/admin/departments')]);
+            setOfficers(oRes.data);
+            setDepartments(dRes.data);
+        } catch (err) { toast.error('Failed to load data'); }
+        finally { setLoading(false); }
+    }, []);
 
-    // --- HANDLE SUBMIT (CREATE OR UPDATE) ---
+    useEffect(() => { fetchData(); }, [fetchData]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             if (editingId) {
-                // Update existing officer
-                await api.put(`/admin/officers/${editingId}`, formData);
-                alert("Officer Updated Successfully!");
+                await api.put(`/admin/officers/${editingId}`, form);
+                toast.success('Officer updated');
             } else {
-                // Create new officer
-                await api.post('/admin/officers', formData);
-                alert("Officer Created Successfully!");
+                await api.post('/admin/officers', form);
+                toast.success('Officer created');
             }
             resetForm();
-            fetchData(); 
-        } catch (err) {
-            alert(err.response?.data?.message || "Action Failed.");
-        }
+            fetchData();
+        } catch (err) { toast.error(err.response?.data?.message || 'Operation failed'); }
     };
 
-    // --- HANDLE DELETE ---
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to remove this officer? This cannot be undone.")) return;
-        
+        if (!window.confirm('Delete this officer?')) return;
         try {
             await api.delete(`/admin/officers/${id}`);
-            alert("Officer Removed!");
+            toast.success('Officer deleted');
             fetchData();
-        } catch (err) {
-            alert(err.response?.data?.message || "Failed to delete.");
-        }
+        } catch (err) { toast.error('Delete failed'); }
     };
 
-    // --- POPULATE FORM FOR EDITING ---
-    const handleEditClick = (officer) => {
+    const handleEdit = (officer) => {
         setEditingId(officer.id);
-        setFormData({
-            name: officer.name,
-            email: officer.email,
-            department_id: officer.department_id || '',
-            password: '' // Leave blank so we don't accidentally overwrite it
-        });
+        setForm({ name: officer.name, department_id: officer.department_id || '', email: officer.email, password: '' });
+        setShowModal(true);
+    };
+
+    const openPermissions = (officer) => {
+        setPermissionsModal(officer);
+        setPerms(officer.permissions ?? { view_queue: true, approve: true, reject: true, bypass: true });
+    };
+
+    const updatePermissions = async () => {
+        setSavingPerms(true);
+        try {
+            await api.put(`/admin/officers/${permissionsModal.id}/permissions`, { permissions: perms });
+            toast.success('Permissions updated!');
+            setPermissionsModal(null);
+            fetchData();
+        } catch (e) { toast.error('Failed to update permissions'); }
+        finally { setSavingPerms(false); }
     };
 
     const resetForm = () => {
         setEditingId(null);
-        setFormData({ name: '', email: '', password: '', department_id: '' });
+        setForm({ name: '', department_id: '', email: '', password: '' });
+        setShowModal(false);
+    };
+
+    const labelStyle = {
+        display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600,
+        color: 'var(--text-secondary)', marginBottom: 6,
+        textTransform: 'uppercase', letterSpacing: '0.05em',
     };
 
     return (
-        <div className="container-fluid p-5">
+        <div className="page-container page-enter">
             {/* Header */}
-            <div className="d-flex align-items-center mb-5 gap-3 text-white">
-                <Link to="/admin/dashboard" className="btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center" style={{width: '45px', height: '45px', background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(10px)'}}>
-                    <FaArrowLeft className="text-primary" />
-                </Link>
-                <div style={{textShadow: '0 2px 4px rgba(0,0,0,0.5)'}}>
-                    <h2 className="fw-bold mb-0 d-flex align-items-center gap-2">
-                        <FaUserTie /> Manage Officers
-                    </h2>
-                    <p className="mb-0 text-white-75">Assign and update staff to their respective departments.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 4 }}>
+                        <Link to="/admin/dashboard" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                            <FaArrowLeft size={14} />
+                        </Link>
+                        <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                            Manage Officers
+                        </h2>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                        {officers.length} registered officer{officers.length !== 1 ? 's' : ''}
+                    </p>
                 </div>
+                <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary-glass">
+                    <FaUserPlus size={14} /> Add Officer
+                </button>
             </div>
 
-            <div className="row g-4">
-                {/* LEFT: ADD/EDIT OFFICER FORM */}
-                <div className="col-lg-4">
-                    <div className="card border-0 shadow-lg rounded-4 overflow-hidden" style={{background: 'rgba(255, 255, 255, 0.90)', backdropFilter: 'blur(15px)'}}>
-                        
-                        {/* Dynamic Form Header */}
-                        <div className={`p-3 fw-bold d-flex align-items-center justify-content-between text-white ${editingId ? 'bg-warning text-dark' : 'bg-primary'}`}>
-                            <div className="d-flex align-items-center gap-2">
-                                {editingId ? <FaEdit /> : <FaUserPlus />} 
+            {/* Officers Table */}
+            {loading ? (
+                <div className="skeleton" style={{ height: 300, borderRadius: 'var(--radius-xl)' }} />
+            ) : (
+                <div className="glass-table-wrap">
+                    <table className="glass-table">
+                        <thead>
+                            <tr>
+                                <th style={{ paddingLeft: 'var(--space-6)' }}>Officer Name</th>
+                                <th>Department</th>
+                                <th>Email</th>
+                                <th style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {officers.map(o => (
+                                <tr key={o.id}>
+                                    <td style={{ paddingLeft: 'var(--space-6)', fontWeight: 600 }}>{o.name}</td>
+                                    <td>
+                                        <span className="badge-glass badge-highlight">
+                                            {o.department?.name || 'Unassigned'}
+                                        </span>
+                                    </td>
+                                    <td style={{ color: 'var(--text-secondary)' }}>{o.email}</td>
+                                    <td style={{ textAlign: 'right', paddingRight: 'var(--space-6)' }}>
+                                        <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                                            <button onClick={() => openPermissions(o)} className="btn-icon-glass" title="Permissions"
+                                                style={{ color: 'var(--accent)' }}>
+                                                <FaShieldAlt size={13} />
+                                            </button>
+                                            <button onClick={() => handleEdit(o)} className="btn-icon-glass" title="Edit">
+                                                <FaEdit size={13} />
+                                            </button>
+                                            <button onClick={() => handleDelete(o.id)} className="btn-icon-glass" title="Delete"
+                                                style={{ color: 'var(--danger)' }}>
+                                                <FaTrash size={13} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {officers.length === 0 && (
+                                <tr><td colSpan={4} style={{ textAlign: 'center', padding: 'var(--space-10)', color: 'var(--text-muted)' }}>
+                                    No officers registered yet.
+                                </td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* Modal */}
+            {showModal && (
+                <div className="glass-modal-overlay" onClick={(e) => e.target === e.currentTarget && resetForm()}>
+                    <div className="glass-modal">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+                            <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)' }}>
                                 {editingId ? 'Edit Officer' : 'Add New Officer'}
+                            </h3>
+                            <button onClick={resetForm} className="btn-icon-glass" style={{ width: 32, height: 32 }}>
+                                <FaTimes size={12} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit}>
+                            <div style={{ marginBottom: 'var(--space-4)' }}>
+                                <label style={labelStyle}>Full Name</label>
+                                <input className="glass-input" placeholder="Officer name" value={form.name}
+                                    onChange={e => setForm({ ...form, name: e.target.value })} />
                             </div>
-                            {editingId && (
-                                <button onClick={resetForm} className="btn btn-sm btn-outline-dark border-0 rounded-circle">
-                                    <FaTimes />
+                            <div style={{ marginBottom: 'var(--space-4)' }}>
+                                <label style={labelStyle}>Department</label>
+                                <select className="glass-select" value={form.department_id}
+                                    onChange={e => setForm({ ...form, department_id: e.target.value })}>
+                                    <option value="">Select department</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: 'var(--space-4)' }}>
+                                <label style={labelStyle}>Email</label>
+                                <input className="glass-input" type="email" placeholder="officer@babcock.edu.ng" value={form.email}
+                                    onChange={e => setForm({ ...form, email: e.target.value })} />
+                            </div>
+                            <div style={{ marginBottom: 'var(--space-6)' }}>
+                                <label style={labelStyle}>{editingId ? 'New Password (leave blank to keep)' : 'Password'}</label>
+                                <input className="glass-input" type="password" placeholder="Min 8 characters" value={form.password}
+                                    onChange={e => setForm({ ...form, password: e.target.value })} />
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                                <button type="button" onClick={resetForm} className="btn-ghost-glass" style={{ flex: 1, padding: 'var(--space-3)' }}>
+                                    Cancel
                                 </button>
-                            )}
+                                <button type="submit" className="btn-primary-glass" style={{ flex: 1, padding: 'var(--space-3)' }}>
+                                    {editingId ? 'Update' : 'Create'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Permissions Modal */}
+            {permissionsModal && (
+                <div className="glass-modal-overlay" onClick={e => e.target === e.currentTarget && setPermissionsModal(null)}>
+                    <div className="glass-modal">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+                            <div>
+                                <h3 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 'var(--text-lg)' }}>
+                                    <FaShieldAlt style={{ color: 'var(--accent)', marginRight: 8 }} />
+                                    {permissionsModal.name}
+                                </h3>
+                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 3 }}>Set permissions for this officer</p>
+                            </div>
+                            <button onClick={() => setPermissionsModal(null)} className="btn-icon-glass"><FaTimes size={12} /></button>
                         </div>
-
-                        <div className="card-body p-4">
-                            <form onSubmit={handleSubmit}>
-                                <div className="mb-3">
-                                    <label className="form-label small fw-bold text-muted">Full Name</label>
-                                    <input className="form-control bg-light border-0" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                        {[['view_queue', 'View Queue', 'Can see students in their department queue'],
+                        ['approve', 'Approve Students', 'Can approve student clearances'],
+                        ['reject', 'Reject Students', 'Can reject student clearances with a reason'],
+                        ['bypass', 'Grant Bypass', 'Can approve bypass requests from students']
+                        ].map(([key, label, desc]) => (
+                            <label key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', marginBottom: 'var(--space-2)', cursor: 'pointer' }}>
+                                <div>
+                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 'var(--text-sm)' }}>{label}</div>
+                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>{desc}</div>
                                 </div>
-                                <div className="mb-3">
-                                    <label className="form-label small fw-bold text-muted">Assign Department</label>
-                                    <select className="form-select bg-light border-0" required value={formData.department_id} onChange={e => setFormData({...formData, department_id: e.target.value})}>
-                                        <option value="">Select Department...</option>
-                                        {departments.map(d => (
-                                            <option key={d.id} value={d.id}>{d.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label small fw-bold text-muted">Email Address</label>
-                                    <input type="email" className="form-control bg-light border-0" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="form-label small fw-bold text-muted">
-                                        Password {editingId && <span className="text-warning small">(Leave blank to keep current)</span>}
-                                    </label>
-                                    <input type="password" className="form-control bg-light border-0" required={!editingId} minLength="6" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                                </div>
-                                
-                                <button type="submit" className={`btn w-100 rounded-pill py-2 fw-bold shadow-sm ${editingId ? 'btn-warning text-dark' : 'btn-primary'}`} disabled={loading}>
-                                    {editingId ? 'Save Changes' : 'Create Officer'}
-                                </button>
-                            </form>
+                                <input type="checkbox" checked={!!perms[key]} onChange={e => setPerms({ ...perms, [key]: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }} />
+                            </label>
+                        ))}
+                        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
+                            <button onClick={() => setPermissionsModal(null)} className="btn-ghost-glass" style={{ flex: 1 }}>Cancel</button>
+                            <button onClick={updatePermissions} disabled={savingPerms} className="btn-primary-glass" style={{ flex: 1 }}>
+                                {savingPerms ? 'Saving...' : 'Save Permissions'}
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                {/* RIGHT: OFFICERS LIST */}
-                <div className="col-lg-8">
-                    <div className="card border-0 shadow-lg rounded-4 overflow-hidden h-100" style={{background: 'rgba(255, 255, 255, 0.90)', backdropFilter: 'blur(15px)'}}>
-                        <div className="card-body p-0">
-                            {loading ? (
-                                <div className="p-5 text-center text-muted">Loading officers...</div>
-                            ) : (
-                                <div className="table-responsive" style={{maxHeight: '600px'}}>
-                                    <table className="table table-hover align-middle mb-0">
-                                        <thead className="bg-light text-uppercase small fw-bold text-muted sticky-top">
-                                            <tr>
-                                                <th className="ps-4 py-3">Officer Name</th>
-                                                <th>Assigned Department</th>
-                                                <th>Email</th>
-                                                <th className="text-end pe-4">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {officers.map(officer => (
-                                                <tr key={officer.id}>
-                                                    <td className="ps-4 fw-bold text-dark py-3">{officer.name}</td>
-                                                    <td><span className="badge bg-info text-dark rounded-pill px-3 shadow-sm">{officer.department?.name || 'Unassigned'}</span></td>
-                                                    <td className="text-muted">{officer.email}</td>
-                                                    
-                                                    {/* NEW ACTION BUTTONS */}
-                                                    <td className="text-end pe-4">
-                                                        <button 
-                                                            onClick={() => handleEditClick(officer)} 
-                                                            className="btn btn-sm btn-outline-primary rounded-circle me-2 shadow-sm"
-                                                            title="Edit Officer"
-                                                        >
-                                                            <FaEdit />
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleDelete(officer.id)} 
-                                                            className="btn btn-sm btn-outline-danger rounded-circle shadow-sm"
-                                                            title="Remove Officer"
-                                                        >
-                                                            <FaTrash />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+            )}
         </div>
     );
 }

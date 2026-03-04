@@ -191,18 +191,56 @@ function ManageOfficers() {
                                 const isHod = selectedDept?.name?.toLowerCase().includes('h.o.d');
                                 const isSchoolOfficer = selectedDept?.name?.toLowerCase().includes('school officer');
                                 if (!isHod && !isSchoolOfficer) return null;
+
+                                const hodDepartments = [
+                                    'Accounting', 'Architecture', 'Banking and Finance',
+                                    'Biochemistry', 'Biology', 'Business Administration',
+                                    'Chemical Engineering', 'Chemistry', 'Christian Religious Studies',
+                                    'Civil Engineering', 'Communication Arts', 'Community Development',
+                                    'Computer Engineering', 'Computer Science', 'Criminology and Security Studies',
+                                    'Economics', 'Education', 'Electrical and Electronics Engineering',
+                                    'English and Literary Studies', 'Estate Management', 'Finance',
+                                    'History and International Studies', 'Information Technology',
+                                    'Law (LLB)', 'Marketing', 'Mass Communication',
+                                    'Mathematics', 'Mechanical Engineering', 'Microbiology',
+                                    'Music', 'Nursing', 'Peace Studies and Conflict Resolution',
+                                    'Philosophy', 'Physics', 'Political Science and Public Administration',
+                                    'Psychology', 'Public Health', 'Religion',
+                                    'Software Engineering', 'Sociology', 'Statistics',
+                                    'Taxation', 'Theatre Arts', 'Urban and Regional Planning',
+                                ];
+
+                                const babcockSchools = [
+                                    'School of Computing and Engineering Sciences',
+                                    'School of Management and Social Sciences',
+                                    'School of Law and Security Studies',
+                                    'School of Education and Humanities',
+                                    'School of Agriculture, Food and Natural Resources',
+                                    'School of Medicine and Health Sciences',
+                                    'School of Nursing',
+                                    'Postgraduate School',
+                                ];
+
+                                const options = isHod ? hodDepartments : babcockSchools;
+                                const label = isHod ? 'Academic Department' : 'School';
+
                                 return (
                                     <div style={{ marginBottom: 'var(--space-4)' }}>
-                                        <label style={labelStyle}>{isHod ? 'Academic Department' : 'School'}</label>
-                                        <input
-                                            className="glass-input"
-                                            placeholder={isHod ? 'e.g. Computer Science' : 'e.g. School of Computing and Engineering'}
+                                        <label style={labelStyle}>{label}</label>
+                                        <select
+                                            className="glass-select"
                                             value={form.academic_department}
                                             onChange={e => setForm({ ...form, academic_department: e.target.value })}
-                                        />
+                                        >
+                                            <option value="">— Select {label} —</option>
+                                            {options.map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 );
                             })()}
+
                             <div style={{ marginBottom: 'var(--space-4)' }}>
                                 <label style={labelStyle}>Email</label>
                                 <input className="glass-input" type="email" placeholder="officer@babcock.edu.ng" value={form.email}

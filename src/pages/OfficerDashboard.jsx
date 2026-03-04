@@ -6,7 +6,8 @@ import ThemeToggle from '../components/ThemeToggle';
 import NotificationBell from '../components/NotificationBell';
 import {
     FaCheck, FaTimes, FaSignOutAlt, FaSync, FaCaretDown, FaUserTie,
-    FaIdCard, FaHospital, FaBook, FaMoneyCheckAlt, FaEye, FaFileAlt, FaDownload
+    FaIdCard, FaHospital, FaBook, FaMoneyCheckAlt, FaEye, FaFileAlt, FaDownload,
+    FaCheckSquare, FaSquare, FaCheckDouble
 } from 'react-icons/fa';
 
 // ── Sub-component: renders the main student queue table ──────────────────────
@@ -14,6 +15,7 @@ function QueueTable({
     queue, searchTerm, setSearchTerm, groupFilter, setGroupFilter,
     isIdOfficer, isButhOfficer, isLibraryOfficer, isBursaryOfficer,
     setPreviewImage, setShowRejectModal, setRejectReason, handleApprove,
+    selectedIds, setSelectedIds,
 }) {
     const filteredQueue = queue.filter(s => {
         const matchSearch = String(s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -22,6 +24,22 @@ function QueueTable({
         return matchSearch && matchGroup;
     });
     const uniqueDepts = Array.from(new Set(queue.map(s => s.academic_dept).filter(Boolean)));
+
+    // Selectable IDs are only non-rejected ones in the current filter
+    const selectableIds = filteredQueue.filter(s => s.status !== 'Rejected').map(s => s.clearance_id);
+    const allSelected = selectableIds.length > 0 && selectableIds.every(id => selectedIds.includes(id));
+
+    const toggleSelectAll = () => {
+        if (allSelected) {
+            setSelectedIds(prev => prev.filter(id => !selectableIds.includes(id)));
+        } else {
+            setSelectedIds(prev => Array.from(new Set([...prev, ...selectableIds])));
+        }
+    };
+
+    const toggleOne = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -38,9 +56,9 @@ function QueueTable({
                 {uniqueDepts.length > 0 && (
                     <select
                         className="glass-select"
-                        style={{ flex: '0 1 200px' }}
+                        style={{ flex: '0 1 220px' }}
                         value={groupFilter}
-                        onChange={e => setGroupFilter(e.target.value)}
+                        onChange={e => { setGroupFilter(e.target.value); setSelectedIds([]); }}
                     >
                         <option value="All">All Departments</option>
                         {uniqueDepts.map(dept => <option key={dept} value={dept}>{dept}</option>)}
@@ -53,7 +71,16 @@ function QueueTable({
                 <table className="glass-table" style={{ width: '100%' }}>
                     <thead>
                         <tr>
-                            <th style={{ paddingLeft: 'var(--space-6)' }}>Student</th>
+                            <th style={{ width: 40, paddingLeft: 'var(--space-4)' }}>
+                                <button
+                                    onClick={toggleSelectAll}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: allSelected ? 'var(--accent)' : 'var(--text-muted)', padding: 0 }}
+                                    title={allSelected ? 'Deselect all' : 'Select all in view'}
+                                >
+                                    {allSelected ? <FaCheckSquare size={15} /> : <FaSquare size={15} />}
+                                </button>
+                            </th>
+                            <th style={{ paddingLeft: 'var(--space-2)' }}>Student</th>
                             <th>Matric No</th>
                             <th>Date</th>
                             {isIdOfficer && <th>ID Card</th>}
@@ -66,16 +93,27 @@ function QueueTable({
                     <tbody>
                         {filteredQueue.length === 0 ? (
                             <tr>
-                                <td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-muted)' }}>
+                                <td colSpan={7} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-muted)' }}>
                                     No students match your search.
                                 </td>
                             </tr>
                         ) : filteredQueue.map(s => {
                             const isRejected = s.status === 'Rejected';
+                            const isChecked = selectedIds.includes(s.clearance_id);
 
                             return (
-                                <tr key={s.clearance_id} style={{ opacity: isRejected ? 0.7 : 1 }}>
-                                    <td style={{ paddingLeft: 'var(--space-6)' }}>
+                                <tr key={s.clearance_id} style={{ opacity: isRejected ? 0.7 : 1, background: isChecked ? 'var(--accent-soft)' : undefined }}>
+                                    <td style={{ paddingLeft: 'var(--space-4)' }}>
+                                        {!isRejected && (
+                                            <button
+                                                onClick={() => toggleOne(s.clearance_id)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: isChecked ? 'var(--accent)' : 'var(--text-muted)', padding: 0 }}
+                                            >
+                                                {isChecked ? <FaCheckSquare size={14} /> : <FaSquare size={14} />}
+                                            </button>
+                                        )}
+                                    </td>
+                                    <td style={{ paddingLeft: 'var(--space-2)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                                             <div style={{
                                                 width: 36, height: 36, borderRadius: 'var(--radius-md)',
@@ -177,15 +215,16 @@ function QueueTable({
 
 function OfficerDashboard() {
     const [data, setData] = useState({ officer: {}, queue: [] });
-
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
-    const [showRejectModal, setShowRejectModal] = useState(null);
+    const [showRejectModal, setShowRejectModal] = useState(null); // null | clearance_id | 'bulk'
     const [rejectReason, setRejectReason] = useState('');
     const [previewImage, setPreviewImage] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [groupFilter, setGroupFilter] = useState('All');
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [bulkLoading, setBulkLoading] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
@@ -194,6 +233,7 @@ function OfficerDashboard() {
         try {
             const res = await api.get('/officer/dashboard');
             setData(res.data);
+            setSelectedIds([]);
             if (isRefresh) toast.success('Queue refreshed');
         } catch (err) {
             if (err.response?.status === 403) toast.error('Access denied');
@@ -227,6 +267,24 @@ function OfficerDashboard() {
             setRejectReason('');
             fetchDashboard();
         } catch (err) { toast.error(err.response?.data?.message || 'Rejection failed'); }
+    };
+
+    const handleBulkAction = async (action) => {
+        if (selectedIds.length === 0) return toast.error('No students selected');
+        if (!rejectReason && action === 'reject') return; // modal handles this
+        setBulkLoading(true);
+        try {
+            const payload = { ids: selectedIds, action };
+            if (action === 'reject') payload.reason = rejectReason;
+            const res = await api.post('/officer/bulk-action', payload);
+            toast.success(res.data.message);
+            setShowRejectModal(null);
+            setRejectReason('');
+            setSelectedIds([]);
+            fetchDashboard();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Bulk action failed');
+        } finally { setBulkLoading(false); }
     };
 
     const handleLogout = async () => {
@@ -266,9 +324,16 @@ function OfficerDashboard() {
                         background: 'var(--accent-soft)', color: 'var(--accent)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>{deptIcon}</div>
-                    <span style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>
-                        {data.officer.department} Office
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                            {data.officer.department} Office
+                        </span>
+                        {data.officer.academic_department && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                {data.officer.academic_department}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -301,16 +366,42 @@ function OfficerDashboard() {
 
             {/* ── Content ── */}
             <div className="page-container page-enter">
-                <div style={{ marginBottom: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ marginBottom: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
                     <div>
                         <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 4 }}>
                             Clearance Queue
                         </h2>
                         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
                             {data.queue.length} student{data.queue.length !== 1 ? 's' : ''} pending review
+                            {selectedIds.length > 0 && (
+                                <span style={{ marginLeft: 8, color: 'var(--accent)', fontWeight: 600 }}>
+                                    · {selectedIds.length} selected
+                                </span>
+                            )}
                         </p>
                     </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {/* ── Bulk action toolbar (only when items selected) ── */}
+                        {selectedIds.length > 0 && (
+                            <>
+                                <button
+                                    onClick={() => { setShowRejectModal('bulk'); setRejectReason(''); }}
+                                    className="btn-danger-glass"
+                                    style={{ fontSize: 'var(--text-sm)' }}
+                                    disabled={bulkLoading}
+                                >
+                                    <FaTimes size={11} /> Bulk Reject ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={() => handleBulkAction('approve')}
+                                    className="btn-success-glass"
+                                    style={{ fontSize: 'var(--text-sm)' }}
+                                    disabled={bulkLoading}
+                                >
+                                    <FaCheckDouble size={11} /> Bulk Approve ({selectedIds.length})
+                                </button>
+                            </>
+                        )}
                         {isBursaryOfficer && (
                             <button onClick={async () => {
                                 try {
@@ -350,19 +441,23 @@ function OfficerDashboard() {
                         setShowRejectModal={setShowRejectModal}
                         setRejectReason={setRejectReason}
                         handleApprove={handleApprove}
+                        selectedIds={selectedIds}
+                        setSelectedIds={setSelectedIds}
                     />
                 )}
             </div>
 
-            {/* ── Reject Modal ── */}
+            {/* ── Reject / Bulk Reject Modal ── */}
             {showRejectModal && (
                 <div className="glass-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowRejectModal(null)}>
                     <div className="glass-modal">
                         <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 'var(--space-2)' }}>
-                            Reject Student
+                            {showRejectModal === 'bulk' ? `Bulk Reject ${selectedIds.length} Students` : 'Reject Student'}
                         </h3>
                         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-5)' }}>
-                            Provide a clear reason for rejection.
+                            {showRejectModal === 'bulk'
+                                ? 'This reason will be sent to all selected students.'
+                                : 'Provide a clear reason for rejection.'}
                         </p>
                         <textarea className="glass-textarea" placeholder="Reason for rejection..." rows={3}
                             value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
@@ -371,8 +466,13 @@ function OfficerDashboard() {
                             <button onClick={() => setShowRejectModal(null)} className="btn-ghost-glass" style={{ flex: 1, padding: 'var(--space-3)' }}>
                                 Cancel
                             </button>
-                            <button onClick={() => handleReject(showRejectModal)} className="btn-danger-glass" style={{ flex: 1, padding: 'var(--space-3)' }}>
-                                Confirm Reject
+                            <button
+                                onClick={() => showRejectModal === 'bulk' ? handleBulkAction('reject') : handleReject(showRejectModal)}
+                                className="btn-danger-glass"
+                                style={{ flex: 1, padding: 'var(--space-3)' }}
+                                disabled={bulkLoading}
+                            >
+                                {bulkLoading ? 'Processing...' : 'Confirm Reject'}
                             </button>
                         </div>
                     </div>

@@ -10,7 +10,7 @@ function ManageOfficers() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ name: '', department_id: '', email: '', password: '' });
+    const [form, setForm] = useState({ name: '', department_id: '', academic_department: '', email: '', password: '' });
     const [permissionsModal, setPermissionsModal] = useState(null); // officer object
     const [perms, setPerms] = useState({});
     const [savingPerms, setSavingPerms] = useState(false);
@@ -53,7 +53,7 @@ function ManageOfficers() {
 
     const handleEdit = (officer) => {
         setEditingId(officer.id);
-        setForm({ name: officer.name, department_id: officer.department_id || '', email: officer.email, password: '' });
+        setForm({ name: officer.name, department_id: officer.department_id || '', academic_department: officer.academic_department || '', email: officer.email, password: '' });
         setShowModal(true);
     };
 
@@ -75,7 +75,7 @@ function ManageOfficers() {
 
     const resetForm = () => {
         setEditingId(null);
-        setForm({ name: '', department_id: '', email: '', password: '' });
+        setForm({ name: '', department_id: '', academic_department: '', email: '', password: '' });
         setShowModal(false);
     };
 
@@ -180,11 +180,29 @@ function ManageOfficers() {
                             <div style={{ marginBottom: 'var(--space-4)' }}>
                                 <label style={labelStyle}>Department</label>
                                 <select className="glass-select" value={form.department_id}
-                                    onChange={e => setForm({ ...form, department_id: e.target.value })}>
+                                    onChange={e => setForm({ ...form, department_id: e.target.value, academic_department: '' })}>
                                     <option value="">Select department</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
+                            {/* Show academic department field only for HOD and School Officer */}
+                            {(() => {
+                                const selectedDept = departments.find(d => String(d.id) === String(form.department_id));
+                                const isHod = selectedDept?.name?.toLowerCase().includes('h.o.d');
+                                const isSchoolOfficer = selectedDept?.name?.toLowerCase().includes('school officer');
+                                if (!isHod && !isSchoolOfficer) return null;
+                                return (
+                                    <div style={{ marginBottom: 'var(--space-4)' }}>
+                                        <label style={labelStyle}>{isHod ? 'Academic Department' : 'School'}</label>
+                                        <input
+                                            className="glass-input"
+                                            placeholder={isHod ? 'e.g. Computer Science' : 'e.g. School of Computing and Engineering'}
+                                            value={form.academic_department}
+                                            onChange={e => setForm({ ...form, academic_department: e.target.value })}
+                                        />
+                                    </div>
+                                );
+                            })()}
                             <div style={{ marginBottom: 'var(--space-4)' }}>
                                 <label style={labelStyle}>Email</label>
                                 <input className="glass-input" type="email" placeholder="officer@babcock.edu.ng" value={form.email}

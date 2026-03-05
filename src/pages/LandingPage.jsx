@@ -30,9 +30,11 @@ function LandingPage() {
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user_role', res.data.user.role);
             localStorage.setItem('user_name', res.data.user.name);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
             const role = res.data.user.role;
             if (role === 'student') navigate('/student/dashboard');
             else if (role === 'officer') navigate('/officer/dashboard');
+            else if (role === 'warden') navigate('/warden/dashboard');
             else if (role === 'super_admin') navigate('/admin/dashboard');
         } catch (err) {
             // Handle unverified email

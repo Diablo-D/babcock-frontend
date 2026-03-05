@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageOfficers from './pages/ManageOfficers';
+import ManageWardens from './pages/ManageWardens';
 import AllStudents from './pages/AllStudents';
 import AdminQueue from './pages/AdminQueue';
 import OfficerDashboard from './pages/OfficerDashboard';
@@ -19,6 +20,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import ActivityLog from './pages/ActivityLog';
 import EmailTemplates from './pages/EmailTemplates';
 import VerifyCertificate from './pages/VerifyCertificate';
+import WardenDashboard from './pages/WardenDashboard';
 
 // Layout
 import AdminLayout from './components/AdminLayout';
@@ -72,6 +74,20 @@ function App() {
                         <Route path="/officer/dashboard" element={
                             <PrivateRoute allowedRoles={['officer']}>
                                 <OfficerDashboard />
+                            </PrivateRoute>
+                        } />
+
+                        {/* Warden */}
+                        <Route path="/warden/dashboard" element={
+                            <PrivateRoute allowedRoles={['warden']}>
+                                <WardenDashboard />
+                            </PrivateRoute>
+                        } />
+
+                        {/* Admin — Manage Wardens */}
+                        <Route path="/admin/wardens" element={
+                            <PrivateRoute allowedRoles={['super_admin']}>
+                                <AdminLayout><ManageWardens /></AdminLayout>
                             </PrivateRoute>
                         } />
 

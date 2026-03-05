@@ -34,6 +34,7 @@ function AdminDashboard() {
         { title: 'Active Clearances', count: stats.active_clearances, icon: <FaHourglassHalf />, color: 'var(--warning)', bg: 'var(--warning-soft)' },
         { title: 'Cleared Students', count: stats.cleared_students, icon: <FaCheckCircle />, color: 'var(--success)', bg: 'var(--success-soft)' },
         { title: 'Staff / Officers', count: stats.staff_count, icon: <FaUserTie />, color: 'var(--highlight)', bg: 'var(--highlight-soft)', link: '/admin/officers', linkText: 'Manage' },
+        { title: 'Wardens', count: '—', icon: <FaUserTie />, color: 'var(--accent)', bg: 'var(--accent-soft)', link: '/admin/wardens', linkText: 'Manage' },
     ];
 
     return (

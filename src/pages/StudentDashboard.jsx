@@ -448,26 +448,69 @@ function StudentDashboard() {
                                 )}
 
                                 {/* Current Stage Indicator */}
-                                {!isCleared && !needsLibraryAction && !needsBursaryAction && (
-                                    <div className="glass-card" style={{
-                                        background: isRejected ? 'var(--danger-soft)' : 'var(--accent-soft)',
-                                        border: `1px solid ${isRejected ? 'rgba(239,68,68,0.15)' : 'rgba(59,92,235,0.1)'}`,
-                                        marginBottom: 'var(--space-5)', padding: 'var(--space-5)',
-                                        display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-                                    }}>
-                                        <div style={{ fontSize: 28 }}>{isRejected ? '🛑' : '📍'}</div>
-                                        <div style={{ flex: 1 }}>
-                                            <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Current Stage</p>
-                                            <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 0 }}>{clearance.current_dept} Department</h4>
-                                            {isRejected && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--danger)', fontWeight: 600, marginTop: 4 }}>Reason: {clearance.rejection_reason}</p>}
+                                {!isCleared && !needsLibraryAction && !needsBursaryAction && (() => {
+                                    const rejections = clearance.active_rejections ?? [];
+                                    // Multiple parallel rejections (e.g. Stage 4)
+                                    if (rejections.length > 1) {
+                                        return (
+                                            <div style={{ marginBottom: 'var(--space-5)' }}>
+                                                <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 'var(--space-2)' }}>
+                                                    🛑 Multiple Rejections — Action Required
+                                                </p>
+                                                {rejections.map((r, i) => (
+                                                    <div key={i} className="glass-card" style={{
+                                                        background: 'var(--danger-soft)',
+                                                        border: '1px solid rgba(239,68,68,0.15)',
+                                                        padding: 'var(--space-4)', marginBottom: 'var(--space-3)',
+                                                    }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                                                            <div>
+                                                                <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 'var(--text-sm)', marginBottom: 2 }}>
+                                                                    {r.department} Department
+                                                                </p>
+                                                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--danger)', fontWeight: 600 }}>
+                                                                    Reason: {r.reason}
+                                                                </p>
+                                                                {r.rejected_by && (
+                                                                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
+                                                                        Rejected by: {r.rejected_by} Desk
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <button onClick={() => setShowBypass(!showBypass)} className="btn-ghost-glass" style={{ fontSize: 'var(--text-xs)', flexShrink: 0 }}>
+                                                                {showBypass ? 'Cancel' : 'Reply'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    }
+                                    // Single rejection or waiting stage
+                                    return (
+                                        <div className="glass-card" style={{
+                                            background: isRejected ? 'var(--danger-soft)' : 'var(--accent-soft)',
+                                            border: `1px solid ${isRejected ? 'rgba(239,68,68,0.15)' : 'rgba(59,92,235,0.1)'}`,
+                                            marginBottom: 'var(--space-5)', padding: 'var(--space-5)',
+                                            display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
+                                        }}>
+                                            <div style={{ fontSize: 28 }}>{isRejected ? '🛑' : '📍'}</div>
+                                            <div style={{ flex: 1 }}>
+                                                <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Current Stage</p>
+                                                <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 0 }}>{clearance.current_dept} Department</h4>
+                                                {isRejected && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--danger)', fontWeight: 600, marginTop: 4 }}>Reason: {clearance.rejection_reason}</p>}
+                                                {isRejected && rejections[0]?.rejected_by && (
+                                                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>Rejected by: {rejections[0].rejected_by} Desk</p>
+                                                )}
+                                            </div>
+                                            {isRejected && (
+                                                <button onClick={() => setShowBypass(!showBypass)} className="btn-ghost-glass" style={{ fontSize: 'var(--text-xs)' }}>
+                                                    {showBypass ? 'Cancel' : 'Reply'}
+                                                </button>
+                                            )}
                                         </div>
-                                        {isRejected && (
-                                            <button onClick={() => setShowBypass(!showBypass)} className="btn-ghost-glass" style={{ fontSize: 'var(--text-xs)' }}>
-                                                {showBypass ? 'Cancel' : 'Reply'}
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
+                                    );
+                                })()}
 
                                 {/* Bypass Form */}
                                 {showBypass && (
@@ -491,29 +534,46 @@ function StudentDashboard() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                                         {data.breakdown?.map((step, idx) => {
                                             const isApproved = step.status === 'Approved' || step.status === 'Cleared' || step.status === 'Completed';
+                                            const isRejectedStep = step.status === 'Rejected';
                                             return (
                                                 <div key={idx} style={{
-                                                    display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                                                    display: 'flex', flexDirection: 'column',
                                                     padding: 'var(--space-3) var(--space-4)',
                                                     borderRadius: 'var(--radius-md)',
-                                                    background: isApproved ? 'var(--success-soft)' : step.status === 'Rejected' ? 'var(--danger-soft)' : 'transparent',
+                                                    background: isApproved ? 'var(--success-soft)' : isRejectedStep ? 'var(--danger-soft)' : 'transparent',
                                                     border: '1px solid var(--border-subtle)',
+                                                    gap: 4,
                                                 }}>
-                                                    <div style={{
-                                                        width: 30, height: 30, borderRadius: 'var(--radius-sm)',
-                                                        background: isApproved ? 'var(--success)' : step.status === 'Rejected' ? 'var(--danger)' : 'var(--bg-input)',
-                                                        color: isApproved || step.status === 'Rejected' ? '#fff' : 'var(--text-muted)',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontWeight: 700, fontSize: 'var(--text-xs)', flexShrink: 0,
-                                                    }}>
-                                                        {isApproved ? <FaCheck size={11} /> : step.sequence}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                                        <div style={{
+                                                            width: 30, height: 30, borderRadius: 'var(--radius-sm)',
+                                                            background: isApproved ? 'var(--success)' : isRejectedStep ? 'var(--danger)' : 'var(--bg-input)',
+                                                            color: isApproved || isRejectedStep ? '#fff' : 'var(--text-muted)',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            fontWeight: 700, fontSize: 'var(--text-xs)', flexShrink: 0,
+                                                        }}>
+                                                            {isApproved ? <FaCheck size={11} /> : isRejectedStep ? <FaTimesCircle size={11} /> : step.sequence}
+                                                        </div>
+                                                        <span style={{ flex: 1, fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
+                                                            {step.department}
+                                                        </span>
+                                                        <span className={`badge-glass ${isApproved ? 'badge-success' : isRejectedStep ? 'badge-danger' : step.status === 'Waiting' ? 'badge-warning' : 'badge-muted'}`}>
+                                                            {isApproved ? 'Approved' : step.status}
+                                                        </span>
                                                     </div>
-                                                    <span style={{ flex: 1, fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
-                                                        {step.department}
-                                                    </span>
-                                                    <span className={`badge-glass ${isApproved ? 'badge-success' : step.status === 'Rejected' ? 'badge-danger' : step.status === 'Waiting' ? 'badge-warning' : 'badge-muted'}`}>
-                                                        {isApproved ? 'Approved' : step.status}
-                                                    </span>
+                                                    {/* Rejection details shown inline under the stage row */}
+                                                    {isRejectedStep && step.rejection_reason && (
+                                                        <div style={{ paddingLeft: 42, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                            <p style={{ fontSize: '11px', color: 'var(--danger)', fontWeight: 600, margin: 0 }}>
+                                                                ⚠ {step.rejection_reason}
+                                                            </p>
+                                                            {step.rejected_by && (
+                                                                <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: 0 }}>
+                                                                    Rejected by: {step.rejected_by} Desk
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}

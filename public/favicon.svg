@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#003366"/>
+  
+  <!-- Graduation cap board -->
+  <polygon points="32,14 10,26 32,36 54,26" fill="#FFFFFF"/>
+  
+  <!-- Cap top button -->
+  <circle cx="32" cy="14" r="3" fill="#FFFFFF"/>
+  
+  <!-- Tassel line -->
+  <line x1="54" y1="26" x2="54" y2="36" stroke="#F4C430" stroke-width="2.5"/>
+  <!-- Tassel end -->
+  <circle cx="54" cy="38" r="3" fill="#F4C430"/>
+  
+  <!-- Left side of mortarboard hanging down -->
+  <path d="M16 28 L16 40 Q32 47 48 40 L48 28" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  
+  <!-- Checkmark shield at bottom -->
+  <path d="M27 42 L36 42 L36 51 Q32 54 28 51 Z" fill="#F4C430" opacity="0.9"/>
+  <polyline points="29,47 31.5,49.5 35,45.5" fill="none" stroke="#003366" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
